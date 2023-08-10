@@ -6,7 +6,7 @@ Entity::Entity(DrawInfo const& drawInfo)
     
 }
 
-Entity::Entity(DrawInfo const& drawInfo, SDL_Point location)
+Entity::Entity(DrawInfo const& drawInfo, Point location)
     : m_drawInfo(drawInfo), m_location(location)
 {
     

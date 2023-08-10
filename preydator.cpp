@@ -1,3 +1,4 @@
+#include "entity.h"
 #include "preydator.h"
 
 Preydator::Preydator(std::vector<Entity> entities)
