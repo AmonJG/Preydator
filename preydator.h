@@ -1,5 +1,12 @@
 #pragma once
 #include "entity.h"
+#include "graphics_handler.h"
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+#include <vector>
+
+using Agent = std::pair<Entity*, std::thread>;
 
 class Preydator
 {
@@ -7,9 +14,18 @@ public:
     Preydator(std::vector<Entity> entities);
     ~Preydator();
     std::vector<Entity> getEntities();
+    void startAgents();
+    void stopAgents();
+    void tick();
+    void drawEntities();
 
 private:
-    std::vector<Entity> m_entities;    
-
+    GraphicsHandler* m_graphicsHandler;  
+    std::vector<Entity> m_entities;
+    std::condition_variable m_cv;
+    std::mutex m_mtx;
+    std::vector<Agent> m_agents;
+    bool m_haltAgents = true;
+    bool m_haltAgents2 = true;
 };
 

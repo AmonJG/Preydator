@@ -1,6 +1,21 @@
+#include "entity.h"
 #include "graphics_handler.h"
 #include <SDL2/SDL.h>
+#include <mutex>
 #include <stdlib.h>
+
+GraphicsHandler* GraphicsHandler::m_graphicsHandlerSingletonInstance = nullptr;
+std::mutex GraphicsHandler::m_mutex;
+
+GraphicsHandler* GraphicsHandler::GetInstance(int w, int h)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if (m_graphicsHandlerSingletonInstance == nullptr)
+    {
+        m_graphicsHandlerSingletonInstance = new GraphicsHandler(w, h);
+    }
+    return m_graphicsHandlerSingletonInstance;
+}
 
 GraphicsHandler::GraphicsHandler(int w, int h)
 {
@@ -40,8 +55,10 @@ GraphicsHandler::~GraphicsHandler()
     SDL_Quit();
 }
 
-void GraphicsHandler::drawEntity(DrawInfo drawInfo, Point location)
+void GraphicsHandler::drawEntity(Entity const& entity)
 {
+    DrawInfo drawInfo = entity.getDrawInfo();
+    Point location = entity.getLocation();
     SDL_SetRenderDrawColor(m_renderer, drawInfo.r, drawInfo.g, drawInfo.b, drawInfo.a);
     for(auto point : drawInfo.points)
     {
@@ -52,7 +69,7 @@ void GraphicsHandler::drawEntity(DrawInfo drawInfo, Point location)
 void GraphicsHandler::render()
 {
     SDL_RenderPresent(m_renderer);
-    SDL_Delay(20);
+    SDL_Delay(1);
     SDL_SetRenderDrawColor(m_renderer, 0, 0, 0, 0);
     SDL_RenderClear(m_renderer);
 }

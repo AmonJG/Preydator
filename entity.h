@@ -1,5 +1,7 @@
 #pragma once
 #include <cstdint>
+#include <condition_variable>
+#include <mutex>
 #include <vector>
 
 struct Point
@@ -19,11 +21,18 @@ public:
     Entity(DrawInfo const& drawInfo);
     Entity(DrawInfo const& drawInfo, Point location);
     ~Entity();
-    DrawInfo getDrawInfo();
+    void run();
+    void setSharedData(std::condition_variable* cv, std::mutex* mtx, bool* h1, bool* h2);
+    DrawInfo getDrawInfo() const;
+    Point getLocation() const;
 
 private:
     const DrawInfo m_drawInfo;
     Point m_location;
+    std::condition_variable* mp_cv;
+    std::mutex* mp_mtx;
+    bool* mp_haltAgents;
+    bool* mp_haltAgents2;
 
 };
 
