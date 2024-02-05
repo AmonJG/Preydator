@@ -24,17 +24,20 @@ std::vector<Entity> Preydator::getEntities()
 
 void Preydator::startAgents()
 {
+    m_stopFlag.store(false, std::memory_order_relaxed);
     std::lock_guard<std::mutex> lk(m_mtx);
     for(auto& entity : m_entities)
     {
         entity.setSharedData(&m_cv, &m_mtx, &m_haltAgents, &m_haltAgents2);
-        m_agents.push_back(std::make_pair(&entity, std::thread(&Entity::run, &entity)));
+        m_agents.push_back(std::make_pair(&entity, std::thread(&Entity::run, &entity, std::ref(m_stopFlag))));
     }
     m_cv.notify_all();
 }
 
 void Preydator::stopAgents()
 {
+    m_stopFlag.store(true, std::memory_order_relaxed);
+    tick();
     for(auto& agent : m_agents)
     {
         agent.second.join();
@@ -43,6 +46,7 @@ void Preydator::stopAgents()
 
 void Preydator::tick()
 {
+    m_haltAgents2 = true;
     m_haltAgents = false;
     m_cv.notify_all();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -50,14 +54,13 @@ void Preydator::tick()
     m_haltAgents2 = false;
     m_cv.notify_all();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    m_haltAgents2 = true;
 }
 
 void Preydator::drawEntities()
 {
-    for(auto& entity : m_agents)
+    for(auto& agent : m_agents)
     {
-        m_graphicsHandler->drawEntity(*entity.first);
+        m_graphicsHandler->drawEntity(*agent.first);
     }
     m_graphicsHandler->render();
 }

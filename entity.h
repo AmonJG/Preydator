@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <condition_variable>
 #include <mutex>
+#include <atomic>
 #include <vector>
 
 struct Point
@@ -21,7 +22,8 @@ public:
     Entity(DrawInfo const& drawInfo);
     Entity(DrawInfo const& drawInfo, Point location);
     ~Entity();
-    void run();
+    void run(std::atomic<bool>& stopFlag);
+    void stop();
     void setSharedData(std::condition_variable* cv, std::mutex* mtx, bool* h1, bool* h2);
     DrawInfo getDrawInfo() const;
     Point getLocation() const;

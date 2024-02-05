@@ -3,6 +3,7 @@
 #include "graphics_handler.h"
 #include <condition_variable>
 #include <mutex>
+#include <atomic>
 #include <thread>
 #include <vector>
 
@@ -25,6 +26,7 @@ private:
     std::condition_variable m_cv;
     std::mutex m_mtx;
     std::vector<Agent> m_agents;
+    std::atomic<bool> m_stopFlag;
     bool m_haltAgents = true;
     bool m_haltAgents2 = true;
 };

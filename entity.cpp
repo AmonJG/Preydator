@@ -21,14 +21,14 @@ Entity::~Entity()
     
 }
 
-void Entity::run()
+void Entity::run(std::atomic<bool>& stopFlag)
 {
-    for(int i = 0; i < 720; i++)
+    while(!stopFlag.load(std::memory_order_relaxed))
     {
         std::unique_lock<std::mutex> lk(*mp_mtx);
         while(*mp_haltAgents) mp_cv->wait(lk);
-        m_location.x += (std::rand() % 11) - 5;
-        m_location.y += (std::rand() % 11) - 5;
+        m_location.x += (std::rand() % 5) - 2;
+        m_location.y += (std::rand() % 5) - 2;
         while(*mp_haltAgents2) mp_cv->wait(lk);
     }
 }
