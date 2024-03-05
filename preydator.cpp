@@ -70,15 +70,19 @@ void Preydator::updateEntities()
 	    (*itr).entity->sendSignal(1);
 	    if((*itr).thread.joinable())
 	    {
+	        //std::cout << "teminate: " << (*itr).entity->getId() << std::endl;
 	        agentsToTerminate.push_back(itr);
 	    }
 	}
     }
     tick();
-    for(auto &agent : agentsToTerminate)
+    for(auto agent = agentsToTerminate.rbegin(); agent != agentsToTerminate.rend(); ++agent)
     {
-        (*agent).thread.join();
-	m_agents.erase(agent);
+        //std::cout << "join: " << (**agent).entity->getId() << std::endl;
+        (**agent).thread.join();
+        //std::cout << "erase: " << (**agent).entity->getId() << std::endl;
+	m_agents.erase(*agent);
+        //std::cout << "done: " << (**agent).entity->getId() << std::endl;
     }
 }
 
