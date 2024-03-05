@@ -7,7 +7,10 @@
 #include <thread>
 #include <vector>
 
-using Agent = std::pair<Entity*, std::thread>;
+typedef struct {
+    Entity* entity;
+    std::thread thread;
+} Agent;
 
 class Preydator
 {
@@ -18,6 +21,7 @@ public:
     void startAgents();
     void stopAgents();
     void tick();
+    void checkEntities();
     void drawEntities();
 
 private:
@@ -26,7 +30,7 @@ private:
     std::condition_variable m_cv;
     std::mutex m_mtx;
     std::vector<Agent> m_agents;
-    std::atomic<bool> m_stopFlag;
+    std::atomic<int> m_stopFlag;
     bool m_haltAgents = true;
     bool m_haltAgents2 = true;
 };

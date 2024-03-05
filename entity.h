@@ -22,15 +22,19 @@ public:
     Entity(DrawInfo const& drawInfo);
     Entity(DrawInfo const& drawInfo, Point location);
     ~Entity();
-    void run(std::atomic<bool>& stopFlag);
+    void run(std::atomic<int>& stopFlag);
     void stop();
+    int check();
     void setSharedData(std::condition_variable* cv, std::mutex* mtx, bool* h1, bool* h2);
     DrawInfo getDrawInfo() const;
+    int getId() const;
     Point getLocation() const;
 
 private:
+    int m_id;
     const DrawInfo m_drawInfo;
     Point m_location;
+    int m_health;
     std::condition_variable* mp_cv;
     std::mutex* mp_mtx;
     bool* mp_haltAgents;

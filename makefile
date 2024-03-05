@@ -1,5 +1,5 @@
 CC := g++
-CFLAGS := -std=c++11 -Wall
+CFLAGS := -std=c++14 -Wall
 LDFLAGS := -lSDL2
 
 SRCS := main.cpp preydator.cpp entity.cpp graphics_handler.cpp
