@@ -21,7 +21,7 @@ public:
     void startAgents();
     void stopAgents();
     void tick();
-    void checkEntities();
+    void updateEntities();
     void drawEntities();
 
 private:

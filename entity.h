@@ -26,6 +26,7 @@ public:
     void stop();
     int check();
     void setSharedData(std::condition_variable* cv, std::mutex* mtx, bool* h1, bool* h2);
+    void sendSignal(int signal);
     DrawInfo getDrawInfo() const;
     int getId() const;
     Point getLocation() const;
@@ -39,6 +40,7 @@ private:
     std::mutex* mp_mtx;
     bool* mp_haltAgents;
     bool* mp_haltAgents2;
+    int m_signal;
 
 };
 

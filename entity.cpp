@@ -16,6 +16,7 @@ Entity::Entity(DrawInfo const& drawInfo)
     m_location.y = std::rand() % 991;
     m_id = newId();
     m_health = 100;
+    m_signal = 0;
 }
 
 Entity::Entity(DrawInfo const& drawInfo, Point location)
@@ -31,7 +32,7 @@ Entity::~Entity()
 
 void Entity::run(std::atomic<int>& stopFlag)
 {
-    while(stopFlag.load(std::memory_order_relaxed) >= 0 && stopFlag.load(std::memory_order_relaxed) != m_id)
+    while(stopFlag.load(std::memory_order_relaxed) >= 0 && m_signal == 0)
     {
         std::unique_lock<std::mutex> lk(*mp_mtx);
         while(*mp_haltAgents) mp_cv->wait(lk);
@@ -55,6 +56,11 @@ void Entity::setSharedData(std::condition_variable* cv, std::mutex* mtx, bool* h
     mp_mtx = mtx;
     mp_haltAgents = h1;
     mp_haltAgents2 = h2;
+}
+
+void Entity::sendSignal(int signal)
+{
+    m_signal = signal;
 }
 
 DrawInfo Entity::getDrawInfo() const

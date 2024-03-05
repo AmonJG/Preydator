@@ -60,20 +60,25 @@ void Preydator::tick()
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
-void Preydator::checkEntities()
+void Preydator::updateEntities()
 {
-    for(auto itr = m_agents.begin(); itr != m_agents.end(); itr++)
+    std::vector<std::vector<Agent>::iterator> agentsToTerminate;
+    for(std::vector<Agent>::iterator itr = m_agents.begin(); itr != m_agents.end(); itr++)
     {
-        if((*itr).entity->check() == 1 && (*itr).entity->getId() == 1)
+        if((*itr).entity->check() == 1)// && (*itr).entity->getId() == 1)
 	{
-	    m_stopFlag.store((*itr).entity->getId(), std::memory_order_relaxed);
+	    (*itr).entity->sendSignal(1);
 	    if((*itr).thread.joinable())
 	    {
-	        tick();
-	        (*itr).thread.join();
+	        agentsToTerminate.push_back(itr);
 	    }
-	    m_agents.erase(itr);
 	}
+    }
+    tick();
+    for(auto &agent : agentsToTerminate)
+    {
+        (*agent).thread.join();
+	m_agents.erase(agent);
     }
 }
 

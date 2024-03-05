@@ -25,8 +25,7 @@ int main(int argc, char* argv[])
     world.startAgents();
     while(!quit)
     {
-        world.tick();
-	world.checkEntities();
+	world.updateEntities();
         world.drawEntities();
     }
     world.stopAgents();
