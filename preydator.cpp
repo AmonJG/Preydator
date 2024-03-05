@@ -48,6 +48,11 @@ void Preydator::stopAgents()
     }
 }
 
+bool Preydator::alive()
+{
+    return !m_agents.empty();
+}
+
 void Preydator::tick()
 {
     m_haltAgents2 = true;
@@ -65,7 +70,7 @@ void Preydator::updateEntities()
     std::vector<std::vector<Agent>::iterator> agentsToTerminate;
     for(std::vector<Agent>::iterator itr = m_agents.begin(); itr != m_agents.end(); itr++)
     {
-        if((*itr).entity->check() == 1)// && (*itr).entity->getId() == 1)
+        if((*itr).entity->check() & 0x1)// && (*itr).entity->getId() == 1)
 	{
 	    (*itr).entity->sendSignal(1);
 	    if((*itr).thread.joinable())

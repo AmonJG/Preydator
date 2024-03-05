@@ -36,6 +36,7 @@ private:
     const DrawInfo m_drawInfo;
     Point m_location;
     int m_health;
+    int m_reproduction;
     std::condition_variable* mp_cv;
     std::mutex* mp_mtx;
     bool* mp_haltAgents;

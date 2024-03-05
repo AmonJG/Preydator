@@ -20,6 +20,7 @@ public:
     std::vector<Entity> getEntities();
     void startAgents();
     void stopAgents();
+    bool alive();
     void tick();
     void updateEntities();
     void drawEntities();
