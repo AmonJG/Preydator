@@ -1,5 +1,5 @@
-#ifndef PREYDATOR_PREYDATOR_H__
-#define PREYDATOR_PREYDATOR_H__
+#ifndef PREYDATOR_WORLD_H__
+#define PREYDATOR_WORLD_H__
 
 #include "Entity/entity.h"
 #include "graphics_handler.h"
@@ -14,18 +14,18 @@ typedef struct {
     std::thread thread;
 } Agent;
 
-class Preydator
+class World
 {
 public:
-    Preydator(std::vector<std::shared_ptr<Entity>> entities);
-    ~Preydator();
+    World(std::vector<std::shared_ptr<Entity>> entities);
+    ~World();
     std::vector<std::shared_ptr<Entity>> getEntities();
     void startAgents();
     void stopAgents();
     bool alive();
     void tick();
-    void updateEntities();
-    void drawEntities();
+    void updateAgents();
+    void drawAgents();
 
 private:
     GraphicsHandler* m_graphicsHandler;  
@@ -38,4 +38,4 @@ private:
     bool m_haltAgents2 = true;
 };
 
-#endif /* PREYDATOR_PREYDATOR_H__ */
+#endif /* PREYDATOR_WORLD_H__ */

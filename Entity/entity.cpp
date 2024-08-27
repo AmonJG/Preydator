@@ -32,7 +32,7 @@ void Entity::run(std::atomic<int>& stopFlag)
         while(*mp_haltAgents) mp_cv->wait(lk);
         m_location.x += (std::rand() % 5) - 2;
         m_location.y += (std::rand() % 5) - 2;
-	m_health -= std::rand() % 3;
+        m_health -= std::rand() % 3;
         while(*mp_haltAgents2) mp_cv->wait(lk);
     }
     //printf("%d terminated!\n", m_id);

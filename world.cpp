@@ -1,29 +1,29 @@
 #include "Entity/entity.h"
 #include "graphics_handler.h"
-#include "preydator.h"
+#include "world.h"
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
 #include <iostream>
 
-Preydator::Preydator(std::vector<std::shared_ptr<Entity>> entities)
+World::World(std::vector<std::shared_ptr<Entity>> entities)
     : m_entities(entities)
 {
     m_graphicsHandler = GraphicsHandler::GetInstance(999, 999);    
 }
 
-Preydator::~Preydator()
+World::~World()
 {
     
 }
 
-std::vector<std::shared_ptr<Entity>> Preydator::getEntities()
+std::vector<std::shared_ptr<Entity>> World::getEntities()
 {
     return m_entities;
 }
 
-void Preydator::startAgents()
+void World::startAgents()
 {
     m_stopFlag.store(0, std::memory_order_relaxed);
     std::lock_guard<std::mutex> lk(m_mtx);
@@ -35,7 +35,7 @@ void Preydator::startAgents()
     m_cv.notify_all();
 }
 
-void Preydator::stopAgents()
+void World::stopAgents()
 {
     m_stopFlag.store(-1, std::memory_order_relaxed);
     tick();
@@ -45,12 +45,12 @@ void Preydator::stopAgents()
     }
 }
 
-bool Preydator::alive()
+bool World::alive()
 {
     return !m_agents.empty();
 }
 
-void Preydator::tick()
+void World::tick()
 {
     m_haltAgents2 = true;
     m_haltAgents = false;
@@ -62,7 +62,7 @@ void Preydator::tick()
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
-void Preydator::updateEntities()
+void World::updateAgents()
 {
     std::vector<std::vector<Agent>::iterator> agentsToTerminate;
     for(std::vector<Agent>::iterator itr = m_agents.begin(); itr != m_agents.end(); itr++)
@@ -88,7 +88,7 @@ void Preydator::updateEntities()
     }
 }
 
-void Preydator::drawEntities()
+void World::drawAgents()
 {
     for(auto& agent : m_agents)
     {

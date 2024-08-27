@@ -4,7 +4,7 @@
 #include "Entity/plant.h"
 #include "Entity/barrier.h"
 #include "graphics_handler.h"
-#include "preydator.h"
+#include "world.h"
 #include <signal.h>
 #include <iostream>
 #include <ctime>
@@ -37,12 +37,12 @@ int main(int argc, char* argv[])
         entities.push_back(std::make_shared<Plant>());
         entities.push_back(std::make_shared<Barrier>());
     }
-    Preydator world(entities);
+    World world(entities);
     world.startAgents();
     while(!quit && world.alive())
     {
-	world.updateEntities();
-        world.drawEntities();
+        world.updateAgents();
+        world.drawAgents();
     }
     world.stopAgents();
 
