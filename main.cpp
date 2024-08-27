@@ -31,6 +31,7 @@ int main(int argc, char* argv[])
 
     std::vector<EntityPtr> entities;
 	std::vector<Barrier> barriers;
+	// create entities
     for(int i = 0; i < atoi(argv[1]); i++)
     {
         entities.push_back(std::make_shared<Predator>());
@@ -42,6 +43,7 @@ int main(int argc, char* argv[])
 		}
     }
     World world(entities, barriers);
+	world.initializeBarriers();
     world.startAgents();
     while(!quit && world.alive())
     {

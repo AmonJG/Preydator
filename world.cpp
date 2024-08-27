@@ -24,11 +24,17 @@ std::vector<EntityPtr> World::getEntities()
 }
 
 
-void World::initializeBlockedSpaceArray()
+void World::initializeBarriers()
 {
 	for(auto& barrier : m_barriers)
 	{
 		barrier.spawn();
+		Point location = barrier.getLocation();
+		DrawInfo drawInfo = barrier.getDrawInfo();
+		for(auto point : drawInfo.points)
+		{
+			m_freeSpace[location.x + point.x][location.y + point.y] = false;
+		}
 	}
 }
 
@@ -41,7 +47,6 @@ void World::startAgents()
         entity->setSharedData(&m_cv, &m_mtx, &m_haltAgents, &m_haltAgents2);
 		m_agents.push_back({entity, std::thread(&Entity::run, entity, std::ref(m_stopFlag))});
     }
-	initializeBlockedSpaceArray();
     m_cv.notify_all();
 }
 

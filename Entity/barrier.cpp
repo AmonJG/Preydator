@@ -24,8 +24,13 @@ void Barrier::spawn()
 		lastX += (std::rand() % 9) * dirX;
 		lastY += (std::rand() % 9) * dirY;
 	}
-    m_location.x = lastX;
-    m_location.y = lastY;
+	if (lastX >= (WORLD_X - 9)) lastX = WORLD_X - 10;
+	if (lastX < 0) lastX = 0;
+    if (lastY >= (WORLD_Y - 9)) lastY = WORLD_Y - 10;
+    if (lastY < 0) lastY = 0;
+
+	m_location.x = lastX;
+	m_location.y = lastY;
 }
 
 void Barrier::action()
