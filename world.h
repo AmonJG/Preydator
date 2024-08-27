@@ -2,6 +2,7 @@
 #define PREYDATOR_WORLD_H__
 
 #include "Entity/entity.h"
+#include "Entity/barrier.h"
 #include "graphics_handler.h"
 #include <condition_variable>
 #include <mutex>
@@ -9,27 +10,32 @@
 #include <thread>
 #include <vector>
 
+using EntityPtr = std::shared_ptr<Entity>;
+
 typedef struct {
-    std::shared_ptr<Entity> entity;
+    EntityPtr entity;
     std::thread thread;
 } Agent;
 
 class World
 {
 public:
-    World(std::vector<std::shared_ptr<Entity>> entities);
+    World(std::vector<EntityPtr> entities, std::vector<Barrier> barriers);
     ~World();
-    std::vector<std::shared_ptr<Entity>> getEntities();
+    std::vector<EntityPtr> getEntities();
     void startAgents();
     void stopAgents();
     bool alive();
     void tick();
     void updateAgents();
-    void drawAgents();
+    void drawEntities();
 
 private:
-    GraphicsHandler* m_graphicsHandler;  
-    std::vector<std::shared_ptr<Entity>> m_entities;
+	void initializeBlockedSpaceArray();
+	bool blockedSpace[WORLD_X][WORLD_Y] = {0};
+    GraphicsHandler* m_graphicsHandler;
+    std::vector<EntityPtr> m_entities;
+	std::vector<Barrier> m_barriers;
     std::condition_variable m_cv;
     std::mutex m_mtx;
     std::vector<Agent> m_agents;

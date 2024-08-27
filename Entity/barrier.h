@@ -1,5 +1,5 @@
-#ifndef PREYDATOR_ENTITY_BARRIER_H__
-#define PREYDATOR_ENTITY_BARRIER_H__
+#ifndef PREYDATOR_BARRIER_H__
+#define PREYDATOR_BARRIER_H__
 
 #include "entity.h"
 
@@ -8,6 +8,8 @@ class Barrier : public Entity
 public:
 
     using Entity::Entity;
+	void spawn() override;
+	void action() override;
 	DrawInfo getDrawInfo() const override;
 
 private:
@@ -36,4 +38,4 @@ DrawInfo const barrierDrawInfo =
 
 } //unnamed namespace
 
-#endif /* PREYDATOR_ENTITY_BARRIER_H__ */
+#endif /* PREYDATOR_BARRIER_H__ */

@@ -7,6 +7,9 @@
 #include <atomic>
 #include <vector>
 
+#define WORLD_X 1900
+#define WORLD_Y 1000
+
 struct Point
 {
     int x, y;
@@ -24,8 +27,10 @@ public:
     Entity();
     Entity(Point location);
     virtual ~Entity() = default;
+	virtual void spawn() = 0;
     void run(std::atomic<int>& stopFlag);
     void stop();
+	virtual void action() = 0;
     int check();
     void setSharedData(std::condition_variable* cv, std::mutex* mtx, bool* h1, bool* h2);
     void sendSignal(int signal);
@@ -33,7 +38,7 @@ public:
     int getId() const;
     Point getLocation() const;
 
-private:
+protected:
     int m_id;
     Point m_location;
     int m_health;

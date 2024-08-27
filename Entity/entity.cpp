@@ -10,10 +10,8 @@ static int newId()
 
 Entity::Entity()
 {
-    m_location.x = std::rand() % 991;
-    m_location.y = std::rand() % 991;
     m_id = newId();
-    m_health = 100;
+    m_health = 1000;
     m_reproduction = 0;
     m_signal = 0;
 }
@@ -26,13 +24,12 @@ Entity::Entity(Point location)
 
 void Entity::run(std::atomic<int>& stopFlag)
 {
+	spawn();
     while(stopFlag.load(std::memory_order_relaxed) >= 0 && m_signal == 0)
     {
         std::unique_lock<std::mutex> lk(*mp_mtx);
         while(*mp_haltAgents) mp_cv->wait(lk);
-        m_location.x += (std::rand() % 5) - 2;
-        m_location.y += (std::rand() % 5) - 2;
-        m_health -= std::rand() % 3;
+        action();
         while(*mp_haltAgents2) mp_cv->wait(lk);
     }
     //printf("%d terminated!\n", m_id);

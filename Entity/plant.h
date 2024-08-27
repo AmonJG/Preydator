@@ -8,6 +8,8 @@ class Plant : public Entity
 public:
 
     using Entity::Entity;
+	void spawn() override;
+	void action() override;
 	DrawInfo getDrawInfo() const override;
 
 private:
