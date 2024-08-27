@@ -1,5 +1,4 @@
 #include "entity.h"
-#include "preydator.h"
 #include <cstdlib>
 #include <iostream>
 

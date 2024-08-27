@@ -1,13 +1,10 @@
-#include "entity.h"
+#include "Entity/entity.h"
 #include "graphics_handler.h"
 #include "preydator.h"
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
-
-
-
 #include <iostream>
 
 Preydator::Preydator(std::vector<Entity> entities)

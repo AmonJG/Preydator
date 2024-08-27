@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PREYDATOR_ENTITY_H__
+#define PREYDATOR_ENTITY_H__
+
 #include <cstdint>
 #include <condition_variable>
 #include <mutex>
@@ -116,3 +118,4 @@ DrawInfo const barrierDrawInfo =
 
 } //unnamed namespace
 
+#endif /* PREYDATOR_ENTITY_H__ */

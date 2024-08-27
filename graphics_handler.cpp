@@ -1,4 +1,4 @@
-#include "entity.h"
+#include "Entity/entity.h"
 #include "graphics_handler.h"
 #include <SDL2/SDL.h>
 #include <mutex>

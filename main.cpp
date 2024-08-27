@@ -1,5 +1,8 @@
-#include "entity.h"
-#include "prey.h"
+#include "Entity/entity.h"
+#include "Entity/predator.h"
+#include "Entity/prey.h"
+#include "Entity/plant.h"
+#include "Entity/barrier.h"
 #include "graphics_handler.h"
 #include "preydator.h"
 #include <signal.h>
@@ -29,10 +32,10 @@ int main(int argc, char* argv[])
     std::vector<Entity> entities;
     for(int i = 0; i < atoi(argv[1]); i++)
     {
-        entities.push_back(Entity(predatorDrawInfo));
+        entities.push_back(Predator(predatorDrawInfo));
         entities.push_back(Prey(preyDrawInfo));
-        entities.push_back(Entity(plantDrawInfo));
-        entities.push_back(Entity(barrierDrawInfo));
+        entities.push_back(Plant(plantDrawInfo));
+        entities.push_back(Barrier(barrierDrawInfo));
     }
     Preydator world(entities);
     world.startAgents();

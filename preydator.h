@@ -1,5 +1,7 @@
-#pragma once
-#include "entity.h"
+#ifndef PREYDATOR_PREYDATOR_H__
+#define PREYDATOR_PREYDATOR_H__
+
+#include "Entity/entity.h"
 #include "graphics_handler.h"
 #include <condition_variable>
 #include <mutex>
@@ -36,3 +38,4 @@ private:
     bool m_haltAgents2 = true;
 };
 
+#endif /* PREYDATOR_PREYDATOR_H__ */

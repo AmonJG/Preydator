@@ -1,5 +1,7 @@
-#pragma once
-#include "entity.h"
+#ifndef PREYDATOR_GRAPHICS_HANDLER_H__
+#define PREYDATOR_GRAPHICS_HANDLER_H__
+
+#include "Entity/entity.h"
 #include <SDL2/SDL.h>
 #include <mutex>
 
@@ -24,3 +26,4 @@ private:
 
 };
 
+#endif /* PREYDATOR_GRAPHICS_HANDLER_H__ */
