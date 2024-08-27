@@ -10,16 +10,16 @@
 #include <vector>
 
 typedef struct {
-    Entity* entity;
+    std::shared_ptr<Entity> entity;
     std::thread thread;
 } Agent;
 
 class Preydator
 {
 public:
-    Preydator(std::vector<Entity> entities);
+    Preydator(std::vector<std::shared_ptr<Entity>> entities);
     ~Preydator();
-    std::vector<Entity> getEntities();
+    std::vector<std::shared_ptr<Entity>> getEntities();
     void startAgents();
     void stopAgents();
     bool alive();
@@ -29,7 +29,7 @@ public:
 
 private:
     GraphicsHandler* m_graphicsHandler;  
-    std::vector<Entity> m_entities;
+    std::vector<std::shared_ptr<Entity>> m_entities;
     std::condition_variable m_cv;
     std::mutex m_mtx;
     std::vector<Agent> m_agents;

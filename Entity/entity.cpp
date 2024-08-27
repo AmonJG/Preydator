@@ -8,8 +8,7 @@ static int newId()
     return ++id;
 }
 
-Entity::Entity(DrawInfo const& drawInfo)
-    : m_drawInfo(drawInfo)
+Entity::Entity()
 {
     m_location.x = std::rand() % 991;
     m_location.y = std::rand() % 991;
@@ -19,13 +18,8 @@ Entity::Entity(DrawInfo const& drawInfo)
     m_signal = 0;
 }
 
-Entity::Entity(DrawInfo const& drawInfo, Point location)
-    : m_drawInfo(drawInfo), m_location(location)
-{
-    
-}
-
-Entity::~Entity()
+Entity::Entity(Point location)
+    : m_location(location)
 {
     
 }
@@ -63,11 +57,6 @@ void Entity::setSharedData(std::condition_variable* cv, std::mutex* mtx, bool* h
 void Entity::sendSignal(int signal)
 {
     m_signal = signal;
-}
-
-DrawInfo Entity::getDrawInfo() const
-{
-    return m_drawInfo;
 }
 
 int Entity::getId() const

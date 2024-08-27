@@ -29,13 +29,13 @@ int main(int argc, char* argv[])
     signal(SIGTERM, signal_handler);
     std::srand((unsigned int)std::time(NULL));
 
-    std::vector<Entity> entities;
+    std::vector<std::shared_ptr<Entity>> entities;
     for(int i = 0; i < atoi(argv[1]); i++)
     {
-        entities.push_back(Predator(predatorDrawInfo));
-        entities.push_back(Prey(preyDrawInfo));
-        entities.push_back(Plant(plantDrawInfo));
-        entities.push_back(Barrier(barrierDrawInfo));
+        entities.push_back(std::make_shared<Predator>());
+        entities.push_back(std::make_shared<Prey>());
+        entities.push_back(std::make_shared<Plant>());
+        entities.push_back(std::make_shared<Barrier>());
     }
     Preydator world(entities);
     world.startAgents();

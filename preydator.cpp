@@ -7,7 +7,7 @@
 #include <thread>
 #include <iostream>
 
-Preydator::Preydator(std::vector<Entity> entities)
+Preydator::Preydator(std::vector<std::shared_ptr<Entity>> entities)
     : m_entities(entities)
 {
     m_graphicsHandler = GraphicsHandler::GetInstance(999, 999);    
@@ -18,7 +18,7 @@ Preydator::~Preydator()
     
 }
 
-std::vector<Entity> Preydator::getEntities()
+std::vector<std::shared_ptr<Entity>> Preydator::getEntities()
 {
     return m_entities;
 }
@@ -29,8 +29,8 @@ void Preydator::startAgents()
     std::lock_guard<std::mutex> lk(m_mtx);
     for(auto& entity : m_entities)
     {
-        entity.setSharedData(&m_cv, &m_mtx, &m_haltAgents, &m_haltAgents2);
-	m_agents.push_back({&entity, std::thread(&Entity::run, &entity, std::ref(m_stopFlag))});
+        entity->setSharedData(&m_cv, &m_mtx, &m_haltAgents, &m_haltAgents2);
+		m_agents.push_back({entity, std::thread(&Entity::run, entity, std::ref(m_stopFlag))});
     }
     m_cv.notify_all();
 }
