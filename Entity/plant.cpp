@@ -15,3 +15,8 @@ DrawInfo Plant::getDrawInfo() const
 {
     return plantDrawInfo;
 }
+
+bool Plant::attack(std::shared_ptr<Entity> entity)
+{
+    return false;
+}

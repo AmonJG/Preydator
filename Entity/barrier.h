@@ -11,6 +11,7 @@ public:
 	void spawn() override;
 	void action() override;
 	DrawInfo getDrawInfo() const override;
+	bool attack(std::shared_ptr<Entity> entity) override;
 
 private:
 

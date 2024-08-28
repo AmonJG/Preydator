@@ -24,7 +24,6 @@ Entity::Entity(Point location)
 
 void Entity::run(std::atomic<int>& stopFlag)
 {
-	spawn();
     while(stopFlag.load(std::memory_order_relaxed) >= 0 && m_signal == 0)
     {
         std::unique_lock<std::mutex> lk(*mp_mtx);
@@ -40,7 +39,7 @@ int Entity::check()
     int flags = 0x0;
     if(m_health <= 0) flags |= 0x1;
     if(m_reproduction >= 100) flags |= 0x2;
-    return flags;
+    return flags |= m_signal;
 }
 
 void Entity::setSharedData(std::condition_variable* cv, std::mutex* mtx, bool* h1, bool* h2)
@@ -71,8 +70,8 @@ Point Entity::getLocationRequest() const
     return m_location_request;
 }
 
-void Entity::allowLocationRequest()
+void Entity::allowLocationUpdate()
 {
-    m_allow_location_request = true;
+    m_allow_location_update = true;
 }
 

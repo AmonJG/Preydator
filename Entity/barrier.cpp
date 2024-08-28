@@ -41,3 +41,8 @@ DrawInfo Barrier::getDrawInfo() const
 {
     return barrierDrawInfo;
 }
+
+bool Barrier::attack(std::shared_ptr<Entity> entity)
+{
+    return false;
+}

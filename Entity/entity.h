@@ -38,13 +38,14 @@ public:
     int getId() const;
     Point getLocation() const;
     Point getLocationRequest() const;
-	void allowLocationRequest();
+	void allowLocationUpdate();
+	virtual bool attack(std::shared_ptr<Entity> entity) = 0;
 
 protected:
     int m_id;
     Point m_location;
 	Point m_location_request;
-	bool m_allow_location_request;
+	bool m_allow_location_update;
     int m_health;
     int m_reproduction;
     std::condition_variable* mp_cv;

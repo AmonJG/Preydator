@@ -47,6 +47,12 @@ void World::startAgents()
     for(auto& entity : m_entities)
     {
         entity->setSharedData(&m_cv, &m_mtx, &m_haltAgents, &m_haltAgents2);
+		entity->spawn();
+		Point loc = entity->getLocation();
+		for(auto point : entity->getDrawInfo().points)
+		{
+			occupiedSpace[loc.x + point.x][loc.y + point.y] = entity;
+		}
 		m_agents.push_back({entity, std::thread(&Entity::run, entity, std::ref(m_stopFlag))});
     }
     m_cv.notify_all();
@@ -84,11 +90,11 @@ void World::updateAgents()
     std::vector<std::vector<Agent>::iterator> agentsToTerminate;
     for(std::vector<Agent>::iterator itr = m_agents.begin(); itr != m_agents.end(); itr++)
     {
-		// If entity wants to move to a valid location
-		if(validLocationRequest((*itr).entity))
+		// If entity executes a valid move
+		if(validMove((*itr).entity))
 		{
-			// Allow movement
-			(*itr).entity->allowLocationRequest();
+			// Allow location update
+			(*itr).entity->allowLocationUpdate();
 			updateEntityLocation((*itr).entity);
 		}
 		// If entity has no healt
@@ -129,13 +135,17 @@ void World::drawEntities()
     m_graphicsHandler->render();
 }
 
-bool World::validLocationRequest(EntityPtr entity) const
+bool World::validMove(EntityPtr entity) const
 {
 	Point locReq = entity->getLocationRequest();
 	if (locReq.x > WORLD_X - 9 || locReq.x < 0 || locReq.y > WORLD_Y - 9 || locReq.y < 0 ) return false;
 	for(auto point : entity->getDrawInfo().points)
 	{
-		if(occupiedSpace[locReq.x + point.x][locReq.y + point.y] && occupiedSpace[locReq.x + point.x][locReq.y + point.y] != entity) return false;
+		EntityPtr occupyingEntity = occupiedSpace[locReq.x + point.x][locReq.y + point.y];
+		if(occupyingEntity && occupyingEntity != entity)
+		{
+			return entity->attack(occupyingEntity);
+		}
 	}
 	return true;
 }

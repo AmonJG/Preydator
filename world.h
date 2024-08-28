@@ -32,7 +32,7 @@ public:
     void drawEntities();
 
 private:
-	bool validLocationRequest(EntityPtr entity) const;
+	bool validMove(EntityPtr entity) const;
 	void updateEntityLocation(EntityPtr entity);
     GraphicsHandler* m_graphicsHandler;
     std::vector<EntityPtr> m_entities;

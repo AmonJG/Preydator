@@ -1,4 +1,5 @@
 #include "predator.h"
+#include "prey.h"
 
 void Predator::spawn()
 {
@@ -11,17 +12,29 @@ void Predator::spawn()
 void Predator::action()
 {
     m_health -= std::rand() % 3;
-	if (m_allow_location_request)
+	if (m_allow_location_update)
 	{
 		m_location.x = m_location_request.x;
 		m_location.y = m_location_request.y;
 	}
 	m_location_request.x = m_location.x + (std::rand() % 9) - 4;
 	m_location_request.y = m_location.y + (std::rand() % 9) - 4;
-	m_allow_location_request = false;
+	m_allow_location_update = false;
 }
 
 DrawInfo Predator::getDrawInfo() const
 {
     return predatorDrawInfo;
+}
+
+bool Predator::attack(std::shared_ptr<Entity> entity)
+{
+	std::shared_ptr<Prey> prey = std::dynamic_pointer_cast<Prey>(entity);
+	if (prey)
+	{
+		prey->sendSignal(1);
+		m_health += 200;
+		return true;
+	}
+    return false;
 }
