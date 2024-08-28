@@ -20,7 +20,7 @@ typedef struct {
 class World
 {
 public:
-    World(std::vector<EntityPtr> entities, std::vector<Barrier> barriers);
+    World(std::vector<EntityPtr> entities, std::vector<EntityPtr> barriers);
     ~World();
     std::vector<EntityPtr> getEntities();
 	void initializeBarriers();
@@ -32,11 +32,11 @@ public:
     void drawEntities();
 
 private:
-	bool validLocation(Point locReq, DrawInfo hitbox) const;
-	bool m_blockedSpace[WORLD_X][WORLD_Y] = {0};
+	bool validLocationRequest(EntityPtr entity) const;
+	void updateEntityLocation(EntityPtr entity);
     GraphicsHandler* m_graphicsHandler;
     std::vector<EntityPtr> m_entities;
-	std::vector<Barrier> m_barriers;
+	std::vector<EntityPtr> m_barriers;
     std::condition_variable m_cv;
     std::mutex m_mtx;
     std::vector<Agent> m_agents;

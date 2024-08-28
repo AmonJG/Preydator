@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
     std::srand((unsigned int)std::time(NULL));
 
     std::vector<EntityPtr> entities;
-	std::vector<Barrier> barriers;
+	std::vector<EntityPtr> barriers;
 	// create entities
     for(int i = 0; i < atoi(argv[1]); i++)
     {
@@ -39,9 +39,10 @@ int main(int argc, char* argv[])
         entities.push_back(std::make_shared<Plant>());
 		for(int j = 0; j < 10; j++)
 		{
-        	barriers.push_back(Barrier());
+            barriers.push_back(std::make_shared<Barrier>());
 		}
     }
+
     World world(entities, barriers);
 	world.initializeBarriers();
     world.startAgents();

@@ -7,7 +7,9 @@
 #include <thread>
 #include <iostream>
 
-World::World(std::vector<EntityPtr> entities, std::vector<Barrier> barriers)
+static EntityPtr occupiedSpace[WORLD_X][WORLD_Y] = {nullptr};
+
+World::World(std::vector<EntityPtr> entities, std::vector<EntityPtr> barriers)
     : m_entities(entities), m_barriers(barriers)
 {
     m_graphicsHandler = GraphicsHandler::GetInstance(WORLD_X - 1, WORLD_Y - 1);    
@@ -28,12 +30,12 @@ void World::initializeBarriers()
 {
 	for(auto& barrier : m_barriers)
 	{
-		barrier.spawn();
-		Point location = barrier.getLocation();
-		DrawInfo drawInfo = barrier.getDrawInfo();
+		barrier->spawn();
+		Point location = barrier->getLocation();
+		DrawInfo drawInfo = barrier->getDrawInfo();
 		for(auto point : drawInfo.points)
 		{
-			m_blockedSpace[location.x + point.x][location.y + point.y] = true;
+			occupiedSpace[location.x + point.x][location.y + point.y] = barrier;
 		}
 	}
 }
@@ -83,10 +85,11 @@ void World::updateAgents()
     for(std::vector<Agent>::iterator itr = m_agents.begin(); itr != m_agents.end(); itr++)
     {
 		// If entity wants to move to a valid location
-		if(validLocation((*itr).entity->getLocationRequest(), (*itr).entity->getDrawInfo()))
+		if(validLocationRequest((*itr).entity))
 		{
 			// Allow movement
 			(*itr).entity->allowLocationRequest();
+			updateEntityLocation((*itr).entity);
 		}
 		// If entity has no healt
         if((*itr).entity->check() & 0x1)
@@ -117,7 +120,7 @@ void World::drawEntities()
 {
 	for(auto& barrier : m_barriers)
 	{
-		m_graphicsHandler->drawEntity(barrier);
+		m_graphicsHandler->drawEntity(*barrier);
 	}
     for(auto& agent : m_agents)
     {
@@ -126,12 +129,27 @@ void World::drawEntities()
     m_graphicsHandler->render();
 }
 
-bool World::validLocation(Point locReq, DrawInfo hitbox) const
+bool World::validLocationRequest(EntityPtr entity) const
 {
+	Point locReq = entity->getLocationRequest();
 	if (locReq.x > WORLD_X - 9 || locReq.x < 0 || locReq.y > WORLD_Y - 9 || locReq.y < 0 ) return false;
-	for(auto point : hitbox.points)
+	for(auto point : entity->getDrawInfo().points)
 	{
-		if(m_blockedSpace[locReq.x + point.x][locReq.y + point.y]) return false;
+		if(occupiedSpace[locReq.x + point.x][locReq.y + point.y] && occupiedSpace[locReq.x + point.x][locReq.y + point.y] != entity) return false;
 	}
 	return true;
+}
+
+void World::updateEntityLocation(EntityPtr entity)
+{
+	Point loc = entity->getLocation();
+	Point locReq = entity->getLocationRequest();
+	for(auto point : entity->getDrawInfo().points)
+	{
+		occupiedSpace[loc.x + point.x][loc.y + point.y] = nullptr;
+	}
+	for(auto point : entity->getDrawInfo().points)
+	{
+		occupiedSpace[locReq.x + point.x][locReq.y + point.y] = entity;
+	}
 }
