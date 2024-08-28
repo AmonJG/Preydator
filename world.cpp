@@ -33,7 +33,7 @@ void World::initializeBarriers()
 		DrawInfo drawInfo = barrier.getDrawInfo();
 		for(auto point : drawInfo.points)
 		{
-			m_freeSpace[location.x + point.x][location.y + point.y] = false;
+			m_blockedSpace[location.x + point.x][location.y + point.y] = true;
 		}
 	}
 }
@@ -82,10 +82,11 @@ void World::updateAgents()
     std::vector<std::vector<Agent>::iterator> agentsToTerminate;
     for(std::vector<Agent>::iterator itr = m_agents.begin(); itr != m_agents.end(); itr++)
     {
-		// If entity wants to move to an invalid location
-		if((*itr).entity->getLocation().x)
+		// If entity wants to move to a valid location
+		if(validLocation((*itr).entity->getLocationRequest(), (*itr).entity->getDrawInfo()))
 		{
-			// Do not allow movement
+			// Allow movement
+			(*itr).entity->allowLocationRequest();
 		}
 		// If entity has no healt
         if((*itr).entity->check() & 0x1)
@@ -125,3 +126,12 @@ void World::drawEntities()
     m_graphicsHandler->render();
 }
 
+bool World::validLocation(Point locReq, DrawInfo hitbox) const
+{
+	if (locReq.x > WORLD_X - 9 || locReq.x < 0 || locReq.y > WORLD_Y - 9 || locReq.y < 0 ) return false;
+	for(auto point : hitbox.points)
+	{
+		if(m_blockedSpace[locReq.x + point.x][locReq.y + point.y]) return false;
+	}
+	return true;
+}

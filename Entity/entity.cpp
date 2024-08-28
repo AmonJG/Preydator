@@ -66,3 +66,13 @@ Point Entity::getLocation() const
     return m_location;
 }
 
+Point Entity::getLocationRequest() const
+{
+    return m_location_request;
+}
+
+void Entity::allowLocationRequest()
+{
+    m_allow_location_request = true;
+}
+

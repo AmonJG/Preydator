@@ -37,10 +37,14 @@ public:
     virtual DrawInfo getDrawInfo() const = 0;
     int getId() const;
     Point getLocation() const;
+    Point getLocationRequest() const;
+	void allowLocationRequest();
 
 protected:
     int m_id;
     Point m_location;
+	Point m_location_request;
+	bool m_allow_location_request;
     int m_health;
     int m_reproduction;
     std::condition_variable* mp_cv;

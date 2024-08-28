@@ -32,7 +32,8 @@ public:
     void drawEntities();
 
 private:
-	bool m_freeSpace[WORLD_X][WORLD_Y] = {0};
+	bool validLocation(Point locReq, DrawInfo hitbox) const;
+	bool m_blockedSpace[WORLD_X][WORLD_Y] = {0};
     GraphicsHandler* m_graphicsHandler;
     std::vector<EntityPtr> m_entities;
 	std::vector<Barrier> m_barriers;
