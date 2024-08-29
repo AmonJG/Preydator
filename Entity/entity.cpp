@@ -17,9 +17,15 @@ Entity::Entity()
 }
 
 Entity::Entity(Point location)
-    : m_location(location)
 {
-    
+    m_id = newId();
+    m_health = 1000;
+    m_reproduction = 0;
+    m_signal = 0;
+	m_location.x = location.x;
+	m_location.y = location.y;
+	m_location_request.x = m_location.x;
+	m_location_request.y = m_location.y;
 }
 
 void Entity::run(std::atomic<int>& stopFlag)
@@ -38,7 +44,7 @@ int Entity::check()
 {
     int flags = 0x0;
     if(m_health <= 0) flags |= 0x1;
-    if(m_reproduction >= 100) flags |= 0x2;
+    if(m_reproduction >= 2000) flags |= 0x2;
     return flags |= m_signal;
 }
 
@@ -74,4 +80,3 @@ void Entity::allowLocationUpdate()
 {
     m_allow_location_update = true;
 }
-

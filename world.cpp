@@ -46,14 +46,8 @@ void World::startAgents()
     std::lock_guard<std::mutex> lk(m_mtx);
     for(auto& entity : m_entities)
     {
-        entity->setSharedData(&m_cv, &m_mtx, &m_haltAgents, &m_haltAgents2);
 		entity->spawn();
-		Point loc = entity->getLocation();
-		for(auto point : entity->getDrawInfo().points)
-		{
-			occupiedSpace[loc.x + point.x][loc.y + point.y] = entity;
-		}
-		m_agents.push_back({entity, std::thread(&Entity::run, entity, std::ref(m_stopFlag))});
+		startEntityAgent(entity);
     }
     m_cv.notify_all();
 }
@@ -88,6 +82,7 @@ void World::tick()
 void World::updateAgents()
 {
     std::vector<std::vector<Agent>::iterator> agentsToTerminate;
+	std::vector<EntityPtr> entitiesToStart;
     for(std::vector<Agent>::iterator itr = m_agents.begin(); itr != m_agents.end(); itr++)
     {
 		// If entity executes a valid move
@@ -97,8 +92,17 @@ void World::updateAgents()
 			(*itr).entity->allowLocationUpdate();
 			updateEntityLocation((*itr).entity);
 		}
+		// If entity can reproduce
+		if((*itr).entity->check() & 0x2)
+		{
+			Point birthLocation = getBirthLocation((*itr).entity);
+			if (birthLocation.x >= 0 && birthLocation.y >= 0)
+			{
+				entitiesToStart.push_back((*itr).entity->giveBirth(birthLocation));
+			}
+		}
 		// If entity has no healt
-        if((*itr).entity->check() & 0x1)
+		if((*itr).entity->check() & 0x1)
 		{
 			// kill entity
 			(*itr).entity->sendSignal(1);
@@ -120,6 +124,12 @@ void World::updateAgents()
 		m_agents.erase(*agent);
         //std::cout << "done: " << (**agent).entity->getId() << std::endl;
     }
+	// Start new agents that have been born
+	for(auto entity : entitiesToStart)
+	{
+		m_entities.push_back(entity);
+		startEntityAgent(entity);
+	}
 }
 
 void World::drawEntities()
@@ -133,6 +143,18 @@ void World::drawEntities()
         m_graphicsHandler->drawEntity(*agent.entity);
     }
     m_graphicsHandler->render();
+}
+
+void World::startEntityAgent(EntityPtr entity)
+{
+	if(!entity) return;
+	entity->setSharedData(&m_cv, &m_mtx, &m_haltAgents, &m_haltAgents2);
+	Point loc = entity->getLocation();
+	for(auto point : entity->getDrawInfo().points)
+	{
+		occupiedSpace[loc.x + point.x][loc.y + point.y] = entity;
+	}
+	m_agents.push_back({entity, std::thread(&Entity::run, entity, std::ref(m_stopFlag))});
 }
 
 bool World::validMove(EntityPtr entity) const
@@ -162,4 +184,40 @@ void World::updateEntityLocation(EntityPtr entity)
 	{
 		occupiedSpace[locReq.x + point.x][locReq.y + point.y] = entity;
 	}
+}
+
+Point World::getBirthLocation(EntityPtr parent)
+{
+	Point parentLocation = parent->getLocation();
+	Point birthLocation = {};
+	// Try to find an unoccupied space several times
+	for (int i = 0; i < 20; i++)
+	{
+		// Choose random location around parent
+		birthLocation.x = parentLocation.x + (std::rand() % 19) - 9;
+		birthLocation.y = parentLocation.y + (std::rand() % 19) - 9;
+		// If location is inside the world boundary
+		if (birthLocation.x <= WORLD_X - 9 && birthLocation.x >= 0 && birthLocation.y <= WORLD_Y - 9 && birthLocation.y >= 0)
+		{
+			// Check for every Point of the hitbox
+			for(auto point : parent->getDrawInfo().points)
+			{
+				// If the space is already occupied
+				EntityPtr occupyingEntity = occupiedSpace[birthLocation.x + point.x][birthLocation.y + point.y];
+				if(occupyingEntity)
+				{
+					// If so, discard this location
+					birthLocation.x = -1;
+					birthLocation.y = -1;
+					break;
+				}
+			}
+			// If location is valid (for the whole hitbox) return it
+			if (birthLocation.x >= 0 && birthLocation.y >= 0) return birthLocation;
+		}
+	}
+	// Return invalid location if no valid location was found
+	birthLocation.x = -1;
+	birthLocation.y = -1;
+	return birthLocation;
 }

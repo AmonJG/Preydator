@@ -40,6 +40,7 @@ public:
     Point getLocationRequest() const;
 	void allowLocationUpdate();
 	virtual bool attack(std::shared_ptr<Entity> entity) = 0;
+	virtual std::shared_ptr<Entity> giveBirth(Point birthLocation) = 0;
 
 protected:
     int m_id;

@@ -46,3 +46,8 @@ bool Barrier::attack(std::shared_ptr<Entity> entity)
 {
     return false;
 }
+
+std::shared_ptr<Entity> Barrier::giveBirth(Point birthLocation)
+{
+	return nullptr;
+}

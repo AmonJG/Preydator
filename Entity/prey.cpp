@@ -12,6 +12,7 @@ void Prey::spawn()
 void Prey::action()
 {
     m_health -= std::rand() % 3;
+	if(m_health <= 0) m_signal |= 0x1;
 	if (m_allow_location_update)
 	{
 		m_location.x = m_location_request.x;
@@ -34,7 +35,14 @@ bool Prey::attack(std::shared_ptr<Entity> entity)
 	{
 		plant->sendSignal(1);
 		m_health += 200;
+		m_reproduction += 1000;
 		return true;
 	}
     return false;
+}
+
+std::shared_ptr<Entity> Prey::giveBirth(Point birthLocation)
+{
+	m_reproduction = 0;
+	return std::make_shared<Prey>(birthLocation);
 }

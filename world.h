@@ -32,8 +32,10 @@ public:
     void drawEntities();
 
 private:
+	void startEntityAgent(EntityPtr entity);
 	bool validMove(EntityPtr entity) const;
 	void updateEntityLocation(EntityPtr entity);
+	Point getBirthLocation(EntityPtr parent);
     GraphicsHandler* m_graphicsHandler;
     std::vector<EntityPtr> m_entities;
 	std::vector<EntityPtr> m_barriers;

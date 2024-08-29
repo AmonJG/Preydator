@@ -12,6 +12,7 @@ public:
 	void action() override;
 	DrawInfo getDrawInfo() const override;
 	bool attack(std::shared_ptr<Entity> entity) override;
+	std::shared_ptr<Entity> giveBirth(Point birthLocation) override;
 
 private:
 
