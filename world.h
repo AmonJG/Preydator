@@ -9,6 +9,7 @@
 #include <atomic>
 #include <thread>
 #include <vector>
+#include <fstream>
 
 using EntityPtr = std::shared_ptr<Entity>;
 
@@ -20,8 +21,9 @@ typedef struct {
 class World
 {
 public:
-    World(std::vector<EntityPtr> entities, std::vector<EntityPtr> barriers);
-    ~World();
+	World(World &other) = delete;
+    void operator=(World const&) = delete;
+    static World* GetInstance(std::vector<EntityPtr> entities, std::vector<EntityPtr> barriers);
     std::vector<EntityPtr> getEntities();
 	void initializeBarriers();
     void startAgents();
@@ -31,11 +33,17 @@ public:
     void updateAgents();
     void drawEntities();
 
+protected:
+    World(std::vector<EntityPtr> entities, std::vector<EntityPtr> barriers);
+    ~World();
+
 private:
 	void startEntityAgent(EntityPtr entity);
 	bool validMove(EntityPtr entity) const;
 	void updateEntityLocation(EntityPtr entity);
 	Point getBirthLocation(EntityPtr parent);
+    static World* m_worldSingletonInstance;
+    static std::mutex m_constructorMutex;
     GraphicsHandler* m_graphicsHandler;
     std::vector<EntityPtr> m_entities;
 	std::vector<EntityPtr> m_barriers;

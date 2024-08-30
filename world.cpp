@@ -9,6 +9,19 @@
 
 static EntityPtr occupiedSpace[WORLD_X][WORLD_Y] = {nullptr};
 
+World* World::m_worldSingletonInstance = nullptr;
+std::mutex World::m_constructorMutex;
+
+World* World::GetInstance(std::vector<EntityPtr> entities, std::vector<EntityPtr> barriers)
+{
+    std::lock_guard<std::mutex> lock(m_constructorMutex);
+    if (m_worldSingletonInstance == nullptr)
+    {
+        m_worldSingletonInstance = new World(entities, barriers);
+    }
+    return m_worldSingletonInstance;
+}
+
 World::World(std::vector<EntityPtr> entities, std::vector<EntityPtr> barriers)
     : m_entities(entities), m_barriers(barriers)
 {

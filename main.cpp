@@ -43,15 +43,15 @@ int main(int argc, char* argv[])
 		}
     }
 
-    World world(entities, barriers);
-	world.initializeBarriers();
-    world.startAgents();
-    while(!quit && world.alive())
+    World* world = World::GetInstance(entities, barriers);
+	world->initializeBarriers();
+    world->startAgents();
+    while(!quit && world->alive())
     {
-        world.updateAgents();
-        world.drawEntities();
+        world->updateAgents();
+        world->drawEntities();
     }
-    world.stopAgents();
+    world->stopAgents();
 
     // Start initial Agent Threads
     // Main Loop
