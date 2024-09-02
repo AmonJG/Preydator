@@ -1,6 +1,7 @@
 #ifndef PREYDATOR_WORLD_H__
 #define PREYDATOR_WORLD_H__
 
+#include "preydator_config.h"
 #include "Entity/entity.h"
 #include "Entity/barrier.h"
 #include "graphics_handler.h"
@@ -22,7 +23,7 @@ class World
 public:
 	World(World &other) = delete;
     void operator=(World const&) = delete;
-    static World* GetInstance(std::vector<EntityPtr> entities, std::vector<EntityPtr> barriers);
+    static World* GetInstance(PreydatorConfig const config);
     std::vector<EntityPtr> getEntities();
 	void initializeBarriers();
     void startAgents();
@@ -33,7 +34,7 @@ public:
     void drawEntities();
 
 protected:
-    World(std::vector<EntityPtr> entities, std::vector<EntityPtr> barriers);
+    World(PreydatorConfig const config);
     ~World();
 
 private:
@@ -43,9 +44,11 @@ private:
 	Point getBirthLocation(EntityPtr parent);
     static World* m_worldSingletonInstance;
     static std::mutex m_constructorMutex;
+	const PreydatorConfig m_config;
     GraphicsHandler* m_graphicsHandler;
     std::vector<EntityPtr> m_entities;
 	std::vector<EntityPtr> m_barriers;
+	std::vector<SDL_Point> m_barrierPoints;
     std::condition_variable m_cv;
     std::mutex m_mtx;
     std::vector<Agent> m_agents;

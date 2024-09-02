@@ -44,5 +44,5 @@ bool Predator::attack(std::shared_ptr<Entity> entity)
 std::shared_ptr<Entity> Predator::giveBirth(Point birthLocation)
 {
 	m_reproduction = 0;
-	return std::make_shared<Predator>(birthLocation);
+	return std::make_shared<Predator>(m_config, birthLocation);
 }

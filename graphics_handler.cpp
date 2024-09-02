@@ -55,18 +55,24 @@ GraphicsHandler::~GraphicsHandler()
     SDL_Quit();
 }
 
-void GraphicsHandler::drawEntity(Entity const& entity)
+void GraphicsHandler::drawEntity(Entity const& entity) const
 {
     DrawInfo drawInfo = entity.getDrawInfo();
     Point location = entity.getLocation();
-    SDL_SetRenderDrawColor(m_renderer, drawInfo.r, drawInfo.g, drawInfo.b, drawInfo.a);
+    SDL_SetRenderDrawColor(m_renderer, drawInfo.color.r, drawInfo.color.g, drawInfo.color.b, drawInfo.color.a);
     for(auto point : drawInfo.points)
     {
         SDL_RenderDrawPoint(m_renderer, location.x + point.x, location.y + point.y);
     }
 }
 
-void GraphicsHandler::render()
+void GraphicsHandler::drawPoints(std::vector<SDL_Point> const& points, Color color) const
+{
+	SDL_SetRenderDrawColor(m_renderer, color.r, color.g, color.b, color.a);
+    SDL_RenderDrawPoints(m_renderer, points.data(), points.size());
+}
+
+void GraphicsHandler::render() const
 {
     SDL_RenderPresent(m_renderer);
     SDL_Delay(1);

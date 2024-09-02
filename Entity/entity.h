@@ -1,6 +1,7 @@
 #ifndef PREYDATOR_ENTITY_H__
 #define PREYDATOR_ENTITY_H__
 
+#include "../preydator_config.h"
 #include <cstdint>
 #include <condition_variable>
 #include <mutex>
@@ -15,17 +16,22 @@ struct Point
     int x, y;
 };
 
+struct Color
+{
+	uint8_t r, g, b, a;
+};
+
 struct DrawInfo
 {
     std::vector<Point> points;
-    uint8_t r, g, b, a;
+    Color color;
 };
 
 class Entity
 {
 public:
-    Entity();
-    Entity(Point location);
+    Entity(PreydatorConfig config);
+    Entity(PreydatorConfig config, Point location);
     virtual ~Entity() = default;
 	virtual void spawn() = 0;
     void run(std::atomic<int>& stopFlag);
@@ -44,6 +50,7 @@ public:
 
 protected:
     int m_id;
+	const PreydatorConfig m_config;
     Point m_location;
 	Point m_location_request;
 	bool m_allow_location_update;

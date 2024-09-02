@@ -11,8 +11,9 @@ public:
     GraphicsHandler(GraphicsHandler &other) = delete;
     void operator=(GraphicsHandler const&) = delete;
     static GraphicsHandler* GetInstance(int w, int h);
-    void drawEntity(Entity const& entity);
-    void render();
+    void drawEntity(Entity const& entity) const;
+	void drawPoints(std::vector<SDL_Point> const& points, Color color) const;
+    void render() const;
 
 protected:
     GraphicsHandler(int w, int h);

@@ -8,15 +8,17 @@ static int newId()
     return ++id;
 }
 
-Entity::Entity()
+Entity::Entity(PreydatorConfig config)
+	: m_config(config)
 {
     m_id = newId();
-    m_health = 1000;
+    m_health = config.entity_start_health;
     m_reproduction = 0;
     m_signal = 0;
 }
 
-Entity::Entity(Point location)
+Entity::Entity(PreydatorConfig config, Point location)
+	: m_config(config)
 {
     m_id = newId();
     m_health = 1000;
@@ -44,7 +46,7 @@ int Entity::check()
 {
     int flags = 0x0;
     if(m_health <= 0) flags |= 0x1;
-    if(m_reproduction >= 2000) flags |= 0x2;
+    if(m_reproduction >= m_config.entity_reproduction_goal) flags |= 0x2;
     return flags |= m_signal;
 }
 

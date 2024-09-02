@@ -30,20 +30,38 @@ static std::string getCurrentTimestamp()
     return oss.str();
 }
 
-World* World::GetInstance(std::vector<EntityPtr> entities, std::vector<EntityPtr> barriers)
+World* World::GetInstance(PreydatorConfig const config)
 {
     std::lock_guard<std::mutex> lock(m_constructorMutex);
     if (m_worldSingletonInstance == nullptr)
     {
-        m_worldSingletonInstance = new World(entities, barriers);
+        m_worldSingletonInstance = new World(config);
     }
     return m_worldSingletonInstance;
 }
 
-World::World(std::vector<EntityPtr> entities, std::vector<EntityPtr> barriers)
-    : m_entities(entities), m_barriers(barriers)
+World::World(PreydatorConfig const config)
+	: m_config(config)
 {
     m_graphicsHandler = GraphicsHandler::GetInstance(WORLD_X - 1, WORLD_Y - 1);
+
+    for(int i = 0; i < config.barriers_start_amount; i++)
+    {
+        m_barriers.push_back(std::make_shared<Barrier>(config));
+    }
+	for(int i = 0; i < config.plants_start_amount; i++)
+    {
+        m_entities.push_back(std::make_shared<Plant>(config));
+    }
+	for(int i = 0; i < config.prey_start_amount; i++)
+    {
+        m_entities.push_back(std::make_shared<Prey>(config));
+    }
+	for(int i = 0; i < config.predators_start_amount; i++)
+    {
+        m_entities.push_back(std::make_shared<Predator>(config));
+    }
+
 	std::string timestamp = getCurrentTimestamp();
     std::string filename = "data/populationData_" + timestamp + ".csv";
     populationDataFile.open(filename);
@@ -76,6 +94,7 @@ void World::initializeBarriers()
 		for(auto point : drawInfo.points)
 		{
 			occupiedSpace[location.x + point.x][location.y + point.y] = barrier;
+			m_barrierPoints.push_back({location.x + point.x, location.y + point.y});
 		}
 	}
 }
@@ -113,11 +132,11 @@ void World::tick()
     m_haltAgents2 = true;
     m_haltAgents = false;
     m_cv.notify_all();
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(m_config.tick_delay));
     m_haltAgents = true;
     m_haltAgents2 = false;
     m_cv.notify_all();
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(m_config.tick_delay));
 }
 
 void World::updateAgents()
@@ -182,10 +201,7 @@ void World::updateAgents()
 
 void World::drawEntities()
 {
-	for(auto& barrier : m_barriers)
-	{
-		m_graphicsHandler->drawEntity(*barrier);
-	}
+	m_graphicsHandler->drawPoints(m_barrierPoints, {128, 128, 128, 255});
     for(auto& agent : m_agents)
     {
         m_graphicsHandler->drawEntity(*agent.entity);
