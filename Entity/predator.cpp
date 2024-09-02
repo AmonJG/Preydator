@@ -11,7 +11,7 @@ void Predator::spawn()
 
 void Predator::action()
 {
-    m_health -= std::rand() % 6;
+    m_health -= std::rand() % 3;
 	if(m_health <= 0) m_signal |= 0x1;
 	if (m_allow_location_update)
 	{
@@ -31,11 +31,11 @@ DrawInfo Predator::getDrawInfo() const
 bool Predator::attack(std::shared_ptr<Entity> entity)
 {
 	std::shared_ptr<Prey> prey = std::dynamic_pointer_cast<Prey>(entity);
-	if (prey)
+	if (prey && !(prey->check() & 0x1))
 	{
 		prey->sendSignal(1);
-		m_health += 200;
-		m_reproduction += 500;
+		m_health += 400;
+		m_reproduction += 2000;
 		return true;
 	}
     return false;

@@ -11,7 +11,7 @@ void Prey::spawn()
 
 void Prey::action()
 {
-    m_health -= std::rand() % 3;
+    m_health -= std::rand() % 2;
 	if(m_health <= 0) m_signal |= 0x1;
 	if (m_allow_location_update)
 	{
@@ -31,11 +31,11 @@ DrawInfo Prey::getDrawInfo() const
 bool Prey::attack(std::shared_ptr<Entity> entity)
 {
 	std::shared_ptr<Plant> plant = std::dynamic_pointer_cast<Plant>(entity);
-	if (plant)
+	if (plant && !(plant->check() & 0x1))
 	{
 		plant->sendSignal(1);
 		m_health += 200;
-		m_reproduction += 1000;
+		m_reproduction += 2000;
 		return true;
 	}
     return false;

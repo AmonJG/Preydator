@@ -1,16 +1,34 @@
 #include "Entity/entity.h"
+#include "Entity/plant.h"
+#include "Entity/prey.h"
+#include "Entity/predator.h"
 #include "graphics_handler.h"
 #include "world.h"
 #include <chrono>
+#include <iomanip>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
 #include <iostream>
+#include <fstream>
 
 static EntityPtr occupiedSpace[WORLD_X][WORLD_Y] = {nullptr};
+static unsigned int tickCounter = 0;
+std::ofstream populationDataFile;
 
 World* World::m_worldSingletonInstance = nullptr;
 std::mutex World::m_constructorMutex;
+
+static std::string getCurrentTimestamp()
+{
+    auto now = std::chrono::system_clock::now();
+    std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+
+    std::tm* localTime = std::localtime(&currentTime);
+    std::ostringstream oss;
+    oss << std::put_time(localTime, "%Y-%m-%d_%H:%M:%S");
+    return oss.str();
+}
 
 World* World::GetInstance(std::vector<EntityPtr> entities, std::vector<EntityPtr> barriers)
 {
@@ -25,12 +43,21 @@ World* World::GetInstance(std::vector<EntityPtr> entities, std::vector<EntityPtr
 World::World(std::vector<EntityPtr> entities, std::vector<EntityPtr> barriers)
     : m_entities(entities), m_barriers(barriers)
 {
-    m_graphicsHandler = GraphicsHandler::GetInstance(WORLD_X - 1, WORLD_Y - 1);    
+    m_graphicsHandler = GraphicsHandler::GetInstance(WORLD_X - 1, WORLD_Y - 1);
+	std::string timestamp = getCurrentTimestamp();
+    std::string filename = "data/populationData_" + timestamp + ".csv";
+    populationDataFile.open(filename);
+
+    if (!populationDataFile.is_open())
+	{
+        std::cerr << "Error opening population data file!" << std::endl;
+    }
+	populationDataFile << "Tick,Predators,Preys,Plants" << std::endl;
 }
 
 World::~World()
 {
-    
+    populationDataFile.close();
 }
 
 std::vector<EntityPtr> World::getEntities()
@@ -82,6 +109,7 @@ bool World::alive()
 
 void World::tick()
 {
+	tickCounter++;
     m_haltAgents2 = true;
     m_haltAgents = false;
     m_cv.notify_all();
@@ -96,8 +124,14 @@ void World::updateAgents()
 {
     std::vector<std::vector<Agent>::iterator> agentsToTerminate;
 	std::vector<EntityPtr> entitiesToStart;
+	int plantPopulation = 0;
+	int preyPopulation = 0;
+	int predatorPopulation = 0;
     for(std::vector<Agent>::iterator itr = m_agents.begin(); itr != m_agents.end(); itr++)
     {
+		if(std::dynamic_pointer_cast<Plant>((*itr).entity))plantPopulation++;
+		if(std::dynamic_pointer_cast<Prey>((*itr).entity))preyPopulation++;
+		if(std::dynamic_pointer_cast<Predator>((*itr).entity))predatorPopulation++;
 		// If entity executes a valid move
 		if(validMove((*itr).entity))
 		{
@@ -126,6 +160,7 @@ void World::updateAgents()
 			}
 		}
     }
+	populationDataFile << tickCounter << "," << predatorPopulation << "," << preyPopulation << "," << plantPopulation << std::endl;
 	// Execute one World tick
     tick();
 	// Kill and remove all joinable Agents and their threads from last tick

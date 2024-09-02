@@ -9,7 +9,6 @@
 #include <atomic>
 #include <thread>
 #include <vector>
-#include <fstream>
 
 using EntityPtr = std::shared_ptr<Entity>;
 
