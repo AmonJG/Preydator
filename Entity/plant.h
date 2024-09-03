@@ -10,7 +10,9 @@ public:
     using Entity::Entity;
 	void spawn() override;
 	void action() override;
+	void perceive(InputLayerValues perception) override;
 	DrawInfo getDrawInfo() const override;
+	double getPerceptionValue() const override;
 	bool attack(std::shared_ptr<Entity> entity) override;
 	std::shared_ptr<Entity> giveBirth(Point birthLocation) override;
 

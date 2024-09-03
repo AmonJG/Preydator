@@ -4,6 +4,26 @@
 #include <string>
 #include <map>
 #include <functional>
+#include <vector>
+
+#define WORLD_X 1900
+#define WORLD_Y 1000
+
+struct Point
+{
+    int x, y;
+};
+
+struct Color
+{
+	uint8_t r, g, b, a;
+};
+
+struct DrawInfo
+{
+    std::vector<Point> points;
+    Color color;
+};
 
 typedef struct {
     int entity_start_health;

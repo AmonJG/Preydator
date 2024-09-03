@@ -177,7 +177,10 @@ void World::updateAgents()
 			{
 				agentsToTerminate.push_back(itr);
 			}
+			continue;
 		}
+		//Send perception data to brain (input layer of neural network)
+		(*itr).entity->perceive(generateEntityPerception((*itr).entity));
     }
 	populationDataFile << tickCounter << "," << predatorPopulation << "," << preyPopulation << "," << plantPopulation << std::endl;
 	// Execute one World tick
@@ -284,4 +287,32 @@ Point World::getBirthLocation(EntityPtr parent)
 	birthLocation.x = -1;
 	birthLocation.y = -1;
 	return birthLocation;
+}
+
+InputLayerValues World::generateEntityPerception(EntityPtr entity)
+{
+	InputLayerValues input_layer_values;
+	Point entityLocation = entity->getLocation();
+	for (auto perception_mapping : perception_mapping_matrix)
+	{
+		int x = perception_mapping.point.x + entityLocation.x;
+		int y = perception_mapping.point.y + entityLocation.y;
+		if (x < WORLD_X && x >= 0 && y < WORLD_Y && y >= 0)
+		{
+			EntityPtr occupyingEntity = occupiedSpace[x][y];
+			if(occupyingEntity)
+			{
+				input_layer_values.push_back({perception_mapping.node_id, occupyingEntity->getPerceptionValue()});
+			}
+			else
+			{
+				input_layer_values.push_back({perception_mapping.node_id, EMPTY_INPUT_LAYER_VALUE});
+			}
+		}
+		else
+		{
+			input_layer_values.push_back({perception_mapping.node_id, 0});
+		}
+	}
+	return input_layer_values;
 }

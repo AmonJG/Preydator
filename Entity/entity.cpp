@@ -9,7 +9,7 @@ static int newId()
 }
 
 Entity::Entity(PreydatorConfig config)
-	: m_config(config)
+	: m_config(config), m_brain()
 {
     m_id = newId();
     m_health = config.entity_start_health;
@@ -17,8 +17,17 @@ Entity::Entity(PreydatorConfig config)
     m_signal = 0;
 }
 
-Entity::Entity(PreydatorConfig config, Point location)
-	: m_config(config)
+Entity::Entity(PreydatorConfig config, NeuralNetwork brain)
+	: m_config(config), m_brain(brain)
+{
+    m_id = newId();
+    m_health = config.entity_start_health;
+    m_reproduction = 0;
+    m_signal = 0;
+}
+
+Entity::Entity(PreydatorConfig config, NeuralNetwork brain, Point location)
+	: m_config(config), m_brain(brain)
 {
     m_id = newId();
     m_health = 1000;

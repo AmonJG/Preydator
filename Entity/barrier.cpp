@@ -37,9 +37,18 @@ void Barrier::action()
 {
 }
 
+void Barrier::perceive(InputLayerValues perception)
+{
+}
+
 DrawInfo Barrier::getDrawInfo() const
 {
     return barrierDrawInfo;
+}
+
+double Barrier::getPerceptionValue() const
+{
+	return BARRIER_INPUT_LAYER_VALUE;
 }
 
 bool Barrier::attack(std::shared_ptr<Entity> entity)

@@ -5,8 +5,8 @@ void Predator::spawn()
 {
     m_location.x = std::rand() % (WORLD_X - 9);
     m_location.y = std::rand() % (WORLD_Y - 9);
-	m_location_request.x = m_location.x + (std::rand() % 9) - 4;
-	m_location_request.y = m_location.y + (std::rand() % 9) - 4;
+	m_location_request.x = m_location.x;
+	m_location_request.y = m_location.y;
 }
 
 void Predator::action()
@@ -18,14 +18,25 @@ void Predator::action()
 		m_location.x = m_location_request.x;
 		m_location.y = m_location_request.y;
 	}
-	m_location_request.x = m_location.x + (std::rand() % 9) - 4;
-	m_location_request.y = m_location.y + (std::rand() % 9) - 4;
+	m_location_request.x = m_location.x + m_desired_movement.x;
+	m_location_request.y = m_location.y + m_desired_movement.y;
 	m_allow_location_update = false;
+}
+
+void Predator::perceive(InputLayerValues perception)
+{
+	m_brain.initializeInputLayer(perception);
+	m_desired_movement = m_brain.decideMovement();
 }
 
 DrawInfo Predator::getDrawInfo() const
 {
     return predatorDrawInfo;
+}
+
+double Predator::getPerceptionValue() const
+{
+	return PREDATOR_INPUT_LAYER_VALUE;
 }
 
 bool Predator::attack(std::shared_ptr<Entity> entity)
@@ -44,5 +55,5 @@ bool Predator::attack(std::shared_ptr<Entity> entity)
 std::shared_ptr<Entity> Predator::giveBirth(Point birthLocation)
 {
 	m_reproduction = 0;
-	return std::make_shared<Predator>(m_config, birthLocation);
+	return std::make_shared<Predator>(m_config, m_brain, birthLocation);
 }

@@ -42,6 +42,7 @@ private:
 	bool validMove(EntityPtr entity) const;
 	void updateEntityLocation(EntityPtr entity);
 	Point getBirthLocation(EntityPtr parent);
+	InputLayerValues generateEntityPerception(EntityPtr entity);
     static World* m_worldSingletonInstance;
     static std::mutex m_constructorMutex;
 	const PreydatorConfig m_config;

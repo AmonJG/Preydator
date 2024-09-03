@@ -18,9 +18,18 @@ void Plant::action()
     m_reproduction += std::rand() % 10;
 }
 
+void Plant::perceive(InputLayerValues perception)
+{
+}
+
 DrawInfo Plant::getDrawInfo() const
 {
     return plantDrawInfo;
+}
+
+double Plant::getPerceptionValue() const
+{
+	return PLANT_INPUT_LAYER_VALUE;
 }
 
 bool Plant::attack(std::shared_ptr<Entity> entity)
@@ -31,5 +40,5 @@ bool Plant::attack(std::shared_ptr<Entity> entity)
 std::shared_ptr<Entity> Plant::giveBirth(Point birthLocation)
 {
 	m_reproduction = 0;
-	return std::make_shared<Plant>(m_config, birthLocation);
+	return std::make_shared<Plant>(m_config, m_brain, birthLocation);
 }
