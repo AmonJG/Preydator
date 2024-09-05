@@ -3,9 +3,8 @@
 #include "Entity/prey.h"
 #include "Entity/predator.h"
 #include "graphics_handler.h"
+#include "preydator_math.h"
 #include "world.h"
-#include <chrono>
-#include <iomanip>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
@@ -19,47 +18,35 @@ std::ofstream populationDataFile;
 World* World::m_worldSingletonInstance = nullptr;
 std::mutex World::m_constructorMutex;
 
-static std::string getCurrentTimestamp()
-{
-    auto now = std::chrono::system_clock::now();
-    std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
-
-    std::tm* localTime = std::localtime(&currentTime);
-    std::ostringstream oss;
-    oss << std::put_time(localTime, "%Y-%m-%d_%H:%M:%S");
-    return oss.str();
-}
-
-World* World::GetInstance(PreydatorConfig const config)
+World* World::GetInstance()
 {
     std::lock_guard<std::mutex> lock(m_constructorMutex);
     if (m_worldSingletonInstance == nullptr)
     {
-        m_worldSingletonInstance = new World(config);
+        m_worldSingletonInstance = new World();
     }
     return m_worldSingletonInstance;
 }
 
-World::World(PreydatorConfig const config)
-	: m_config(config)
+World::World()
 {
     m_graphicsHandler = GraphicsHandler::GetInstance(WORLD_X - 1, WORLD_Y - 1);
 
     for(int i = 0; i < config.barriers_start_amount; i++)
     {
-        m_barriers.push_back(std::make_shared<Barrier>(config));
+        m_barriers.push_back(std::make_shared<Barrier>());
     }
 	for(int i = 0; i < config.plants_start_amount; i++)
     {
-        m_entities.push_back(std::make_shared<Plant>(config));
+        m_entities.push_back(std::make_shared<Plant>());
     }
 	for(int i = 0; i < config.prey_start_amount; i++)
     {
-        m_entities.push_back(std::make_shared<Prey>(config));
+        m_entities.push_back(std::make_shared<Prey>());
     }
 	for(int i = 0; i < config.predators_start_amount; i++)
     {
-        m_entities.push_back(std::make_shared<Predator>(config));
+        m_entities.push_back(std::make_shared<Predator>());
     }
 
 	std::string timestamp = getCurrentTimestamp();
@@ -114,6 +101,8 @@ void World::startAgents()
 void World::stopAgents()
 {
     m_stopFlag.store(-1, std::memory_order_relaxed);
+	// document one entity for testing
+	m_agents.back().entity->documentSelf();
     tick();
     for(auto& agent : m_agents)
     {
@@ -132,11 +121,11 @@ void World::tick()
     m_haltAgents2 = true;
     m_haltAgents = false;
     m_cv.notify_all();
-    std::this_thread::sleep_for(std::chrono::milliseconds(m_config.tick_delay));
+    std::this_thread::sleep_for(std::chrono::milliseconds(config.tick_delay));
     m_haltAgents = true;
     m_haltAgents2 = false;
     m_cv.notify_all();
-    std::this_thread::sleep_for(std::chrono::milliseconds(m_config.tick_delay));
+    std::this_thread::sleep_for(std::chrono::milliseconds(config.tick_delay));
 }
 
 void World::updateAgents()
@@ -303,6 +292,7 @@ InputLayerValues World::generateEntityPerception(EntityPtr entity)
 			if(occupyingEntity)
 			{
 				input_layer_values.push_back({perception_mapping.node_id, occupyingEntity->getPerceptionValue()});
+				//std::cout << input_layer_values.back().id << " " << input_layer_values.back().value << std::endl;
 			}
 			else
 			{
@@ -311,7 +301,7 @@ InputLayerValues World::generateEntityPerception(EntityPtr entity)
 		}
 		else
 		{
-			input_layer_values.push_back({perception_mapping.node_id, 0});
+			input_layer_values.push_back({perception_mapping.node_id, INVALID_INPUT_LAYER_VALUE});
 		}
 	}
 	return input_layer_values;

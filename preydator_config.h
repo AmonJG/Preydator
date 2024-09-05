@@ -9,6 +9,13 @@
 #define WORLD_X 1900
 #define WORLD_Y 1000
 
+#define INVALID_INPUT_LAYER_VALUE 0
+#define EMPTY_INPUT_LAYER_VALUE 0.2
+#define BARRIER_INPUT_LAYER_VALUE 0.4
+#define PLANT_INPUT_LAYER_VALUE 0.6
+#define PREY_INPUT_LAYER_VALUE 0.8
+#define PREDATOR_INPUT_LAYER_VALUE 1.0
+
 struct Point
 {
     int x, y;
@@ -25,7 +32,7 @@ struct DrawInfo
     Color color;
 };
 
-typedef struct {
+struct PreydatorConfig {
     int entity_start_health;
 	int entity_reproduction_goal;
 	int barriers_start_amount;
@@ -33,25 +40,33 @@ typedef struct {
 	int prey_start_amount;
 	int predators_start_amount;
 	int tick_delay;
-} PreydatorConfig;
+	int init_mutations;
+	int offspring_mutations;
+};
 
-const std::map<std::string, std::function<void(PreydatorConfig&, std::string)>>
+extern PreydatorConfig config;
+
+const std::map<std::string, std::function<void(std::string)>>
 preydator_config_assign_map
 {
-	{"entity_start_health", [](PreydatorConfig &config, std::string value)
+	{"entity_start_health", [](std::string value)
 		{config.entity_start_health = std::stoi(value);}},
-	{"entity_reproduction_goal", [](PreydatorConfig &config, std::string value)
+	{"entity_reproduction_goal", [](std::string value)
 		{config.entity_reproduction_goal = std::stoi(value);}},
-	{"barriers_start_amount", [](PreydatorConfig &config, std::string value)
+	{"barriers_start_amount", [](std::string value)
 		{config.barriers_start_amount = std::stoi(value);}},
-	{"plants_start_amount", [](PreydatorConfig &config, std::string value)
+	{"plants_start_amount", [](std::string value)
 		{config.plants_start_amount = std::stoi(value);}},
-	{"prey_start_amount", [](PreydatorConfig &config, std::string value)
+	{"prey_start_amount", [](std::string value)
 		{config.prey_start_amount = std::stoi(value);}},
-	{"predators_start_amount", [](PreydatorConfig &config, std::string value)
+	{"predators_start_amount", [](std::string value)
 		{config.predators_start_amount = std::stoi(value);}},
-	{"tick_delay", [](PreydatorConfig &config, std::string value)
-		{config.tick_delay = std::stoi(value);}}
+	{"tick_delay", [](std::string value)
+		{config.tick_delay = std::stoi(value);}},
+	{"init_mutations", [](std::string value)
+		{config.init_mutations = std::stoi(value);}},
+	{"offspring_mutations", [](std::string value)
+		{config.offspring_mutations = std::stoi(value);}}
 };
 
 #endif /* PREYDATOR_CONFIG_H__ */

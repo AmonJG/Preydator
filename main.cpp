@@ -14,6 +14,7 @@
 static volatile sig_atomic_t quit = false;
 static std::string config_file_name = "preydator.config";
 static std::ifstream config_file;
+PreydatorConfig config;
 
 void signal_handler(int signum)
 {
@@ -40,7 +41,6 @@ int main(int argc, char* argv[])
 		return -1;
     }
 
-	PreydatorConfig config;
 	for (std::string line; std::getline(config_file, line);)
     {
 		size_t pos = line.find('=');
@@ -48,11 +48,11 @@ int main(int argc, char* argv[])
 		{
 			std::string key = line.substr(0, pos);
 			std::string value = line.substr(pos + 1);
-			preydator_config_assign_map.at(key)(config, value);
+			preydator_config_assign_map.at(key)(value);
 		}
 	}
 
-    World* world = World::GetInstance(config);
+    World* world = World::GetInstance();
 	world->initializeBarriers();
     world->startAgents();
     while(!quit && world->alive())

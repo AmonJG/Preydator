@@ -9,18 +9,12 @@
 #include <atomic>
 #include <vector>
 
-#define EMPTY_INPUT_LAYER_VALUE 0.2
-#define BARRIER_INPUT_LAYER_VALUE 0.4
-#define PLANT_INPUT_LAYER_VALUE 0.6
-#define PREY_INPUT_LAYER_VALUE 0.8
-#define PREDATOR_INPUT_LAYER_VALUE 1.0
-
 class Entity
 {
 public:
-    Entity(PreydatorConfig config);
-    Entity(PreydatorConfig config, NeuralNetwork brain);
-    Entity(PreydatorConfig config, NeuralNetwork brain, Point location);
+    Entity();
+    Entity(NeuralNetwork brain);
+    Entity(NeuralNetwork brain, Point location);
     virtual ~Entity() = default;
 	virtual void spawn() = 0;
     void run(std::atomic<int>& stopFlag);
@@ -35,13 +29,13 @@ public:
     Point getLocation() const;
     Point getLocationRequest() const;
 	void allowLocationUpdate();
+	void documentSelf();
 	virtual double getPerceptionValue() const = 0;
 	virtual bool attack(std::shared_ptr<Entity> entity) = 0;
 	virtual std::shared_ptr<Entity> giveBirth(Point birthLocation) = 0;
 
 protected:
     int m_id;
-	const PreydatorConfig m_config;
 	NeuralNetwork m_brain;
     Point m_location;
 	Point m_location_request;

@@ -25,8 +25,7 @@ void Predator::action()
 
 void Predator::perceive(InputLayerValues perception)
 {
-	m_brain.initializeInputLayer(perception);
-	m_desired_movement = m_brain.decideMovement();
+	m_desired_movement = m_brain.decideMovement(perception);
 }
 
 DrawInfo Predator::getDrawInfo() const
@@ -55,5 +54,5 @@ bool Predator::attack(std::shared_ptr<Entity> entity)
 std::shared_ptr<Entity> Predator::giveBirth(Point birthLocation)
 {
 	m_reproduction = 0;
-	return std::make_shared<Predator>(m_config, m_brain, birthLocation);
+	return std::make_shared<Predator>(m_brain, birthLocation);
 }

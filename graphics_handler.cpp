@@ -74,9 +74,9 @@ void GraphicsHandler::drawPoints(std::vector<SDL_Point> const& points, Color col
 
 void GraphicsHandler::render() const
 {
-    SDL_RenderPresent(m_renderer);
-    SDL_Delay(1);
-    SDL_SetRenderDrawColor(m_renderer, 0, 0, 0, 0);
-    SDL_RenderClear(m_renderer);
+	SDL_RenderPresent(m_renderer);
+	SDL_Delay(1);
+	SDL_SetRenderDrawColor(m_renderer, 0, 0, 0, 0);
+	SDL_RenderClear(m_renderer);
 }
 

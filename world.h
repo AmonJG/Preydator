@@ -13,17 +13,17 @@
 
 using EntityPtr = std::shared_ptr<Entity>;
 
-typedef struct {
+struct Agent {
     EntityPtr entity;
     std::thread thread;
-} Agent;
+};
 
 class World
 {
 public:
 	World(World &other) = delete;
     void operator=(World const&) = delete;
-    static World* GetInstance(PreydatorConfig const config);
+    static World* GetInstance();
     std::vector<EntityPtr> getEntities();
 	void initializeBarriers();
     void startAgents();
@@ -34,7 +34,7 @@ public:
     void drawEntities();
 
 protected:
-    World(PreydatorConfig const config);
+    World();
     ~World();
 
 private:
@@ -45,7 +45,6 @@ private:
 	InputLayerValues generateEntityPerception(EntityPtr entity);
     static World* m_worldSingletonInstance;
     static std::mutex m_constructorMutex;
-	const PreydatorConfig m_config;
     GraphicsHandler* m_graphicsHandler;
     std::vector<EntityPtr> m_entities;
 	std::vector<EntityPtr> m_barriers;

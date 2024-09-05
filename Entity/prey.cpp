@@ -25,8 +25,7 @@ void Prey::action()
 
 void Prey::perceive(InputLayerValues perception)
 {
-	m_brain.initializeInputLayer(perception);
-	m_desired_movement = m_brain.decideMovement();
+	m_desired_movement = m_brain.decideMovement(perception);
 }
 
 DrawInfo Prey::getDrawInfo() const
@@ -55,5 +54,5 @@ bool Prey::attack(std::shared_ptr<Entity> entity)
 std::shared_ptr<Entity> Prey::giveBirth(Point birthLocation)
 {
 	m_reproduction = 0;
-	return std::make_shared<Prey>(m_config, m_brain, birthLocation);
+	return std::make_shared<Prey>(m_brain, birthLocation);
 }

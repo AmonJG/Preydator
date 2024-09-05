@@ -7,9 +7,9 @@ static int newId()
     static int id = 0;
     return ++id;
 }
-
-Entity::Entity(PreydatorConfig config)
-	: m_config(config), m_brain()
+// TODO: remove that all entitites get brains
+Entity::Entity()
+	: m_brain()
 {
     m_id = newId();
     m_health = config.entity_start_health;
@@ -17,8 +17,8 @@ Entity::Entity(PreydatorConfig config)
     m_signal = 0;
 }
 
-Entity::Entity(PreydatorConfig config, NeuralNetwork brain)
-	: m_config(config), m_brain(brain)
+Entity::Entity(NeuralNetwork brain)
+	: m_brain(/*brain*/)
 {
     m_id = newId();
     m_health = config.entity_start_health;
@@ -26,11 +26,11 @@ Entity::Entity(PreydatorConfig config, NeuralNetwork brain)
     m_signal = 0;
 }
 
-Entity::Entity(PreydatorConfig config, NeuralNetwork brain, Point location)
-	: m_config(config), m_brain(brain)
+Entity::Entity(NeuralNetwork brain, Point location)
+	: m_brain(/*brain*/)
 {
     m_id = newId();
-    m_health = 1000;
+    m_health = config.entity_start_health;
     m_reproduction = 0;
     m_signal = 0;
 	m_location.x = location.x;
@@ -55,7 +55,7 @@ int Entity::check()
 {
     int flags = 0x0;
     if(m_health <= 0) flags |= 0x1;
-    if(m_reproduction >= m_config.entity_reproduction_goal) flags |= 0x2;
+    if(m_reproduction >= config.entity_reproduction_goal) flags |= 0x2;
     return flags |= m_signal;
 }
 
@@ -90,4 +90,9 @@ Point Entity::getLocationRequest() const
 void Entity::allowLocationUpdate()
 {
     m_allow_location_update = true;
+}
+
+void Entity::documentSelf()
+{
+	m_brain.exportGraph();
 }
