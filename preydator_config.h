@@ -40,6 +40,8 @@ struct PreydatorConfig {
 	int prey_start_amount;
 	int predators_start_amount;
 	int tick_delay;
+	int init_hidden_layers;
+	int init_neurons_per_hidden_layer;
 	int init_mutations;
 	int offspring_mutations;
 };
@@ -63,6 +65,10 @@ preydator_config_assign_map
 		{config.predators_start_amount = std::stoi(value);}},
 	{"tick_delay", [](std::string value)
 		{config.tick_delay = std::stoi(value);}},
+	{"init_hidden_layers", [](std::string value)
+		{config.init_hidden_layers = std::stoi(value);}},
+	{"init_neurons_per_hidden_layer", [](std::string value)
+		{config.init_neurons_per_hidden_layer = std::stoi(value);}},
 	{"init_mutations", [](std::string value)
 		{config.init_mutations = std::stoi(value);}},
 	{"offspring_mutations", [](std::string value)

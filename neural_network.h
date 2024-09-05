@@ -144,6 +144,8 @@ public:
 private:
 	void setInputLayer(InputLayerValues input_layer_values);
 	void calculateNeuronValue(Neuron neuron);
+	Neuron getRandInputLayerNeuron();
+	Neuron getRandHiddenLayerNeuron(size_t hiddenLayerIndex);
 	Neuron getRandNeuronFromFollowingLayers(size_t startLayerIndex);
 	void init();
 	void mutate();

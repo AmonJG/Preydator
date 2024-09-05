@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-int randWithExponentialBias(int max);
+int randWithExponentialBias(int min, int max);
 std::vector<int> generateUniqueRandInts(int ammount, int limit);
 int generateRandomInt(int min, int max);
 double generateRandomDouble(double min, double max);

@@ -6,7 +6,7 @@
 
 NeuralNetwork::NeuralNetwork()
 {
-	// Create empty input layer
+	// Create input layer neurons
 	for (auto perception_mapping : perception_mapping_matrix)
 	{
 		Neuron neuron = std::make_shared<Node>();
@@ -15,21 +15,7 @@ NeuralNetwork::NeuralNetwork()
 		m_input_layer[perception_mapping.node_id] = neuron;
 	}
 
-	// Create two hidden layers with one neuron
-	Layer hidden_layer_0;
-	Neuron neuron_0 = std::make_shared<Node>();
-	neuron_0->id = m_neuron_id_counter++;
-	neuron_0->value = 0;
-	hidden_layer_0.neurons.push_back(neuron_0);
-	Layer hidden_layer_1;
-	Neuron neuron_1 = std::make_shared<Node>();
-	neuron_1->id = m_neuron_id_counter++;
-	neuron_1->value = 0;
-	hidden_layer_1.neurons.push_back(neuron_1);
-	m_hidden_layers.push_back(hidden_layer_0);
-	m_hidden_layers.push_back(hidden_layer_1);
-
-	// Create empty output layer
+	// Create output layer neurons
 	// TODO put all in two lines
 	Neuron neuron_x = std::make_shared<Node>();
 	neuron_x->id = m_neuron_id_counter++;
@@ -39,6 +25,20 @@ NeuralNetwork::NeuralNetwork()
 	neuron_y->id = m_neuron_id_counter++;
 	neuron_y->value = INVALID_INPUT_LAYER_VALUE;
 	m_output_layer[OutputLayerNodeIds::MOVE_Y] = neuron_y;
+
+	// Create two hidden layers with neurons
+	for (int layerIndex = 0; layerIndex < config.init_hidden_layers; layerIndex++)
+	{
+		Layer hidden_layer;
+		for (int neuronIndex = 0; neuronIndex < config.init_neurons_per_hidden_layer; neuronIndex++)
+		{
+			Neuron neuron = std::make_shared<Node>();
+			neuron->id = m_neuron_id_counter++;
+			neuron->value = 0;
+			hidden_layer.neurons.push_back(neuron);
+		}
+		m_hidden_layers.push_back(hidden_layer);
+	}
 
 	// Create random brain
 	init();
@@ -76,16 +76,10 @@ Point NeuralNetwork::decideMovement(InputLayerValues input_layer_values)
 	Neuron y_out = m_output_layer[OutputLayerNodeIds::MOVE_Y];
 	calculateNeuronValue(y_out);
 
-	// Normalize and assign output values (range = [-9,9])
+	// Normalize and assign output values (range = [-5,5])
 	
-	// TODO
-	// TODO: REMOVE RANDOM VALUE OVERWRITE
-	// TODO
-	
-	desired_movement.x = std::tanh(x_out->value) * 9;
-	//desired_movement.x = (std::rand() % 5) - 2;
-	desired_movement.y = std::tanh(y_out->value) * 9;
-	//desired_movement.y = (std::rand() % 5) - 2;
+	desired_movement.x = std::tanh(x_out->value) * 5;
+	desired_movement.y = std::tanh(y_out->value) * 5;
 	return desired_movement;
 }
 
@@ -105,7 +99,7 @@ void NeuralNetwork::exportGraph()
 	{
         std::cerr << "Error opening neural network graph export file!" << std::endl;
     }
-	out_file << "graph {\n\trankdir=LR;\n\tsubgraph {\n\t\trank=same;" << std::endl;
+	out_file << "digraph {\n\trankdir=LR;\n\tsubgraph {\n\t\trank=same;" << std::endl;
 	// write input layer neurons
 	for (auto perception_mapping : perception_mapping_matrix)
 	{
@@ -134,7 +128,7 @@ void NeuralNetwork::exportGraph()
 	// Write synapses
 	for (auto synapse : m_synapses)
 	{
-		out_file << "\t" << synapse->src_neuron->id << "--" <<
+		out_file << "\t" << synapse->src_neuron->id << "->" <<
 			synapse->dst_neuron->id << " [label = \"" <<
 			synapse->weight << "\"];" << std::endl;
 	}
@@ -164,10 +158,23 @@ void NeuralNetwork::calculateNeuronValue(Neuron neuron)
 	}
 }
 
+Neuron NeuralNetwork::getRandInputLayerNeuron()
+{
+	int neuronIndex = std::rand() % perception_mapping_matrix.size();
+	return m_input_layer[perception_mapping_matrix[neuronIndex].node_id];
+}
+
+Neuron NeuralNetwork::getRandHiddenLayerNeuron(size_t hiddenLayerIndex)
+{
+	int neuronIndex = std::rand() % m_hidden_layers[hiddenLayerIndex].neurons.size();
+	return m_hidden_layers[hiddenLayerIndex].neurons[neuronIndex];
+}
+
 Neuron NeuralNetwork::getRandNeuronFromFollowingLayers(size_t startLayerIndex)
 {
 	Neuron neuron;
-	size_t dstLayerIndex = generateRandomInt(startLayerIndex, m_hidden_layers.size());
+	// nearer layers are exp. more likely
+	size_t dstLayerIndex = randWithExponentialBias(startLayerIndex, m_hidden_layers.size());
 	// Neuron from output layer
 	if (dstLayerIndex == m_hidden_layers.size())
 	{
@@ -220,7 +227,7 @@ void NeuralNetwork::init()
 
 void NeuralNetwork::mutate()
 {
-	int numberOfEdgesToMutate = randWithExponentialBias(m_synapses.size());
+	int numberOfEdgesToMutate = randWithExponentialBias(1, m_synapses.size());
 	auto edgesToMutate = generateUniqueRandInts(numberOfEdgesToMutate, m_synapses.size());
 	for (auto edgeIndex : edgesToMutate)
 	{
@@ -229,14 +236,39 @@ void NeuralNetwork::mutate()
 		m_synapses[edgeIndex]->weight += generateRandomDouble(-changeFactor, changeFactor);
 	}
 	int r = std::rand() % 100;
-	// 10% New Neuron
+	// 10% New Neuron with two synapses
 	if (r < 10)
 	{
-		int layerIndex = std::rand() % m_hidden_layers.size();
+		int hiddenLayerIndex = std::rand() % m_hidden_layers.size();
+
+		Synapse in = std::make_shared<Edge>();
+		Synapse out = std::make_shared<Edge>();
+		m_synapses.push_back(in);
+		m_synapses.push_back(out);
+		in->weight = generateRandomDouble(-1, 1);
+		out->weight = generateRandomDouble(-1, 1);
+
 		Neuron neuron = std::make_shared<Node>();
 		neuron->id = m_neuron_id_counter++;
 		neuron->value = INVALID_INPUT_LAYER_VALUE;
-		m_hidden_layers[layerIndex].neurons.push_back(neuron);
+		neuron->incoming_edges.push_back(in);
+		m_hidden_layers[hiddenLayerIndex].neurons.push_back(neuron);
+		in->dst_neuron = neuron;
+		out->src_neuron = neuron;
+
+		// Get random src neuron
+		if (hiddenLayerIndex == 0)
+		{
+			in->src_neuron = getRandInputLayerNeuron();
+		}
+		else
+		{
+			in->src_neuron = getRandHiddenLayerNeuron(hiddenLayerIndex - 1);
+		}
+		// Get random dst neuron
+		out->dst_neuron = getRandNeuronFromFollowingLayers(hiddenLayerIndex + 1);
+		// TODO: check ob das wirklich so rekursiv geht
+		out->dst_neuron->incoming_edges.push_back(out);
 	}
 	// 10% New Synapse
 	if (r >= 90)
@@ -249,13 +281,11 @@ void NeuralNetwork::mutate()
 		// src is input layer
 		if (srcLayerIndex == 0)
 		{
-			int neuronIndex = std::rand() % perception_mapping_matrix.size();
-			synapse->src_neuron = m_input_layer[perception_mapping_matrix[neuronIndex].node_id];
+			synapse->src_neuron = getRandInputLayerNeuron();
 		}
 		else
 		{
-			int neuronIndex = std::rand() % m_hidden_layers[srcLayerIndex - 1].neurons.size();
-			synapse->src_neuron = m_hidden_layers[srcLayerIndex - 1].neurons[neuronIndex];
+			synapse->src_neuron = getRandHiddenLayerNeuron(srcLayerIndex - 1);
 		}
 		synapse->dst_neuron = getRandNeuronFromFollowingLayers(srcLayerIndex);
 		// TODO: check ob das wirklich so rekursiv geht
