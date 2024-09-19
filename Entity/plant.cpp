@@ -40,5 +40,5 @@ bool Plant::attack(std::shared_ptr<Entity> entity)
 std::shared_ptr<Entity> Plant::giveBirth(Point birthLocation)
 {
 	m_reproduction = 0;
-	return std::make_shared<Plant>(m_brain, birthLocation);
+	return std::make_shared<Plant>(birthLocation);
 }

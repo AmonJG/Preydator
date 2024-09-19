@@ -53,14 +53,16 @@ int main(int argc, char* argv[])
 	}
 
     World* world = World::GetInstance();
-	world->initializeBarriers();
-    world->startAgents();
-    while(!quit && world->alive())
+    while (!quit)
     {
-        world->updateAgents();
-        world->drawEntities();
+		world->initNewGeneration();
+		while (!quit && world->generationAlive())
+		{
+			world->updateAgents();
+			world->drawEntities();
+		}
+		world->killGeneration();
     }
-    world->stopAgents();
 
     // Start initial Agent Threads
     // Main Loop

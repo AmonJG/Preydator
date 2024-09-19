@@ -14,6 +14,7 @@ class Entity
 public:
     Entity();
     Entity(NeuralNetwork brain);
+    Entity(Point location);
     Entity(NeuralNetwork brain, Point location);
     virtual ~Entity() = default;
 	virtual void spawn() = 0;
@@ -26,6 +27,7 @@ public:
     void sendSignal(int signal);
     virtual DrawInfo getDrawInfo() const = 0;
     int getId() const;
+	NeuralNetwork getBrain() const;
     Point getLocation() const;
     Point getLocationRequest() const;
 	void allowLocationUpdate();
@@ -42,7 +44,7 @@ protected:
 	Point m_desired_movement;
 	bool m_allow_location_update;
     int m_health;
-    int m_reproduction;
+    unsigned int m_reproduction;
     std::condition_variable* mp_cv;
     std::mutex* mp_mtx;
     bool* mp_haltAgents;

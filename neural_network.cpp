@@ -27,10 +27,10 @@ NeuralNetwork::NeuralNetwork()
 	m_output_layer[OutputLayerNodeIds::MOVE_Y] = neuron_y;
 
 	// Create two hidden layers with neurons
-	for (int layerIndex = 0; layerIndex < config.init_hidden_layers; layerIndex++)
+	for (unsigned int layerIndex = 0; layerIndex < config.init_hidden_layers; layerIndex++)
 	{
 		Layer hidden_layer;
-		for (int neuronIndex = 0; neuronIndex < config.init_neurons_per_hidden_layer; neuronIndex++)
+		for (unsigned int neuronIndex = 0; neuronIndex < config.init_neurons_per_hidden_layer; neuronIndex++)
 		{
 			Neuron neuron = std::make_shared<Node>();
 			neuron->id = m_neuron_id_counter++;
@@ -41,13 +41,22 @@ NeuralNetwork::NeuralNetwork()
 	}
 
 	// Create random brain
+	// Initializing synapses for every neuron (two times)
 	init();
+	init();
+	// Mutate new brain as often as configured
+	for (unsigned int i = 0; i < config.init_mutations; i++) mutate();
 }
 
-NeuralNetwork::NeuralNetwork(NeuralNetwork const& parent_brain)
+NeuralNetwork::NeuralNetwork(const NeuralNetwork& other)
+    : m_input_layer(other.m_input_layer),
+      m_output_layer(other.m_output_layer),
+      m_hidden_layers(other.m_hidden_layers),
+      m_synapses(other.m_synapses),
+      m_neuron_id_counter(other.m_neuron_id_counter)
 {
-	m_neuron_id_counter = parent_brain.getNeuronIdCounter();
-	// Mutate given brain
+	// Mutate offsping brain as often as configured
+	for (unsigned int i = 0; i < config.offspring_mutations; i++) mutate();
 }
 
 NeuralNetwork::~NeuralNetwork()
@@ -99,7 +108,7 @@ void NeuralNetwork::exportGraph()
 	{
         std::cerr << "Error opening neural network graph export file!" << std::endl;
     }
-	out_file << "digraph {\n\trankdir=LR;\n\tsubgraph {\n\t\trank=same;" << std::endl;
+	out_file << "digraph {\n\trankdir=LR;\n\tranksep=5.0;\n\tsubgraph {\n\t\trank=same;" << std::endl;
 	// write input layer neurons
 	for (auto perception_mapping : perception_mapping_matrix)
 	{
@@ -222,7 +231,6 @@ void NeuralNetwork::init()
 			synapse->dst_neuron->incoming_edges.push_back(synapse);
 		}
 	}
-	//for (int i = 0; i < config.init_mutations; i++) mutate();
 }
 
 void NeuralNetwork::mutate()
@@ -237,7 +245,7 @@ void NeuralNetwork::mutate()
 	}
 	int r = std::rand() % 100;
 	// 10% New Neuron with two synapses
-	if (r < 10)
+	if (r % 10 == 0)
 	{
 		int hiddenLayerIndex = std::rand() % m_hidden_layers.size();
 
@@ -271,7 +279,7 @@ void NeuralNetwork::mutate()
 		out->dst_neuron->incoming_edges.push_back(out);
 	}
 	// 10% New Synapse
-	if (r >= 90)
+	if (r % 10 == 1)
 	{
 		Synapse synapse = std::make_shared<Edge>();
 		m_synapses.push_back(synapse);
@@ -291,7 +299,42 @@ void NeuralNetwork::mutate()
 		// TODO: check ob das wirklich so rekursiv geht
 		synapse->dst_neuron->incoming_edges.push_back(synapse);
 	}
+	// 10% Delete Neuron
+	if (r % 10 == 2)
+	{
+		int layerIndex = std::rand() % (m_hidden_layers.size());
+		auto neurons = m_hidden_layers[layerIndex].neurons;
+		int neuronIndex = std::rand() % neurons.size();
+		Neuron neuronToDelete = neurons[neuronIndex];
+
+		for (size_t i = 0; i < m_synapses.size(); i++)
+		{
+			if (m_synapses[i]->src_neuron == neuronToDelete ||
+				m_synapses[i]->dst_neuron == neuronToDelete)
+			{
+				m_synapses.erase(m_synapses.begin() + i);
+			}
+		}
+		neurons.erase(neurons.begin() + neuronIndex);
+	}
+	// 10% Delete Synapse
+	if (r % 10 == 3)
+	{
+		int synapseIndex = std::rand() % (m_synapses.size());
+		Synapse synapseToDelete = m_synapses[synapseIndex];
+		// The Synapse that is about to be removed points to a neuron.
+		// This neuron has a list of all incoming edges.
+		// This Synapse need to be removed from this list to be deleted.
+		auto dstNeuronIncEdges = synapseToDelete->dst_neuron->incoming_edges;
+		for (size_t i = 0; i < dstNeuronIncEdges.size(); i++)
+		{
+			if (dstNeuronIncEdges[i] == synapseToDelete)
+			{
+				dstNeuronIncEdges.erase(dstNeuronIncEdges.begin() + i);
+			}
+		}
+		m_synapses.erase(m_synapses.begin() + synapseIndex);
+	}
+
 	// 1%   -> in new Hidden Layer
-	// 2%  Delete Neuron
-	// 2%  Delete Synapse
 }

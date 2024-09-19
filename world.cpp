@@ -13,6 +13,7 @@
 
 static EntityPtr occupiedSpace[WORLD_X][WORLD_Y] = {nullptr};
 static unsigned int tickCounter = 0;
+static unsigned int generationCounter = 0;
 std::ofstream populationDataFile;
 
 World* World::m_worldSingletonInstance = nullptr;
@@ -30,24 +31,10 @@ World* World::GetInstance()
 
 World::World()
 {
-    m_graphicsHandler = GraphicsHandler::GetInstance(WORLD_X - 1, WORLD_Y - 1);
-
-    for(int i = 0; i < config.barriers_start_amount; i++)
-    {
-        m_barriers.push_back(std::make_shared<Barrier>());
-    }
-	for(int i = 0; i < config.plants_start_amount; i++)
-    {
-        m_entities.push_back(std::make_shared<Plant>());
-    }
-	for(int i = 0; i < config.prey_start_amount; i++)
-    {
-        m_entities.push_back(std::make_shared<Prey>());
-    }
-	for(int i = 0; i < config.predators_start_amount; i++)
-    {
-        m_entities.push_back(std::make_shared<Predator>());
-    }
+	if (config.show_animation)
+	{
+		m_graphicsHandler = GraphicsHandler::GetInstance(WORLD_X - 1, WORLD_Y - 1);
+	}
 
 	std::string timestamp = getCurrentTimestamp();
     std::string filename = "data/populationData_" + timestamp + ".csv";
@@ -70,62 +57,60 @@ std::vector<EntityPtr> World::getEntities()
     return m_entities;
 }
 
-
-void World::initializeBarriers()
+void World::initNewGeneration()
 {
-	for(auto& barrier : m_barriers)
+	std::cout << "Generation: " << ++generationCounter << std::endl;
+	m_generationAlive = true;
+	std::vector<NeuralNetwork> preyBrains;
+	std::vector<NeuralNetwork> predatorBrains;
+	selectBestBrains(preyBrains, predatorBrains);
+
+    for(unsigned int i = 0; i < config.barriers_start_amount; i++)
+    {
+        m_barriers.push_back(std::make_shared<Barrier>());
+    }
+	for(unsigned int i = 0; i < config.plants_start_amount; i++)
+    {
+        m_entities.push_back(std::make_shared<Plant>());
+    }
+	for(unsigned int i = 0; i < config.prey_start_amount; i++)
+    {
+        m_entities.push_back(std::make_shared<Prey>(preyBrains[i]));
+    }
+	for(unsigned int i = 0; i < config.predators_start_amount; i++)
+    {
+        m_entities.push_back(std::make_shared<Predator>(predatorBrains[i]));
+    }
+	initializeBarriers();
+    startAgents();
+}
+
+void World::killGeneration()
+{
+	for (auto entity : m_entities)
 	{
-		barrier->spawn();
-		Point location = barrier->getLocation();
-		DrawInfo drawInfo = barrier->getDrawInfo();
-		for(auto point : drawInfo.points)
+		if (!std::dynamic_pointer_cast<Plant>(entity))
 		{
-			occupiedSpace[location.x + point.x][location.y + point.y] = barrier;
-			m_barrierPoints.push_back({location.x + point.x, location.y + point.y});
+			m_deadEntities.push(entity);
 		}
 	}
-}
+	stopAgents();
+	m_agents.clear();
+	m_entities.clear();
+	m_barriers.clear();
 
-void World::startAgents()
-{
-    m_stopFlag.store(0, std::memory_order_relaxed);
-    std::lock_guard<std::mutex> lk(m_mtx);
-    for(auto& entity : m_entities)
-    {
-		entity->spawn();
-		startEntityAgent(entity);
+	for (int i = 0; i < WORLD_X; ++i) {
+        for (int j = 0; j < WORLD_Y; ++j) {
+            occupiedSpace[i][j] = nullptr;
+        }
     }
-    m_cv.notify_all();
+	m_barrierPoints.clear();
+	tickCounter = 0;
 }
 
-void World::stopAgents()
+bool World::generationAlive()
 {
-    m_stopFlag.store(-1, std::memory_order_relaxed);
-	// document one entity for testing
-	m_agents.back().entity->documentSelf();
-    tick();
-    for(auto& agent : m_agents)
-    {
-        agent.thread.join();
-    }
-}
-
-bool World::alive()
-{
-    return !m_agents.empty();
-}
-
-void World::tick()
-{
-	tickCounter++;
-    m_haltAgents2 = true;
-    m_haltAgents = false;
-    m_cv.notify_all();
-    std::this_thread::sleep_for(std::chrono::milliseconds(config.tick_delay));
-    m_haltAgents = true;
-    m_haltAgents2 = false;
-    m_cv.notify_all();
-    std::this_thread::sleep_for(std::chrono::milliseconds(config.tick_delay));
+	return m_generationAlive;
 }
 
 void World::updateAgents()
@@ -172,11 +157,17 @@ void World::updateAgents()
 		(*itr).entity->perceive(generateEntityPerception((*itr).entity));
     }
 	populationDataFile << tickCounter << "," << predatorPopulation << "," << preyPopulation << "," << plantPopulation << std::endl;
+	if (predatorPopulation == 0 || preyPopulation == 0) m_generationAlive = false;
 	// Execute one World tick
     tick();
+	if (tickCounter > config.max_ticks_per_generation) m_generationAlive = false;
 	// Kill and remove all joinable Agents and their threads from last tick
     for(auto agent = agentsToTerminate.rbegin(); agent != agentsToTerminate.rend(); ++agent)
     {
+		if (!std::dynamic_pointer_cast<Plant>((**agent).entity))
+		{
+			m_deadEntities.push((**agent).entity);
+		}
         //std::cout << "join: " << (**agent).entity->getId() << std::endl;
         (**agent).thread.join();
         //std::cout << "erase: " << (**agent).entity->getId() << std::endl;
@@ -193,12 +184,65 @@ void World::updateAgents()
 
 void World::drawEntities()
 {
+	if (!config.show_animation) return;
 	m_graphicsHandler->drawPoints(m_barrierPoints, {128, 128, 128, 255});
     for(auto& agent : m_agents)
     {
         m_graphicsHandler->drawEntity(*agent.entity);
     }
     m_graphicsHandler->render();
+}
+
+void World::initializeBarriers()
+{
+	for(auto& barrier : m_barriers)
+	{
+		barrier->spawn();
+		Point location = barrier->getLocation();
+		DrawInfo drawInfo = barrier->getDrawInfo();
+		for(auto point : drawInfo.points)
+		{
+			occupiedSpace[location.x + point.x][location.y + point.y] = barrier;
+			m_barrierPoints.push_back({location.x + point.x, location.y + point.y});
+		}
+	}
+}
+
+void World::startAgents()
+{
+    m_stopFlag.store(0, std::memory_order_relaxed);
+    std::lock_guard<std::mutex> lk(m_mtx);
+    for(auto& entity : m_entities)
+    {
+		entity->spawn();
+		startEntityAgent(entity);
+    }
+    m_cv.notify_all();
+}
+
+void World::stopAgents()
+{
+    m_stopFlag.store(-1, std::memory_order_relaxed);
+	// document one entity for testing
+	m_agents.back().entity->documentSelf();
+    tick();
+    for(auto& agent : m_agents)
+    {
+        agent.thread.join();
+    }
+}
+
+void World::tick()
+{
+	tickCounter++;
+    m_haltAgents2 = true;
+    m_haltAgents = false;
+    m_cv.notify_all();
+    std::this_thread::sleep_for(std::chrono::microseconds(config.tick_delay));
+    m_haltAgents = true;
+    m_haltAgents2 = false;
+    m_cv.notify_all();
+    std::this_thread::sleep_for(std::chrono::microseconds(config.tick_delay));
 }
 
 void World::startEntityAgent(EntityPtr entity)
@@ -239,6 +283,34 @@ void World::updateEntityLocation(EntityPtr entity)
 	for(auto point : entity->getDrawInfo().points)
 	{
 		occupiedSpace[locReq.x + point.x][locReq.y + point.y] = entity;
+	}
+}
+
+
+void World::selectBestBrains(std::vector<NeuralNetwork>& preyBrains, std::vector<NeuralNetwork>& predatorBrains)
+{
+	int preyAmount = config.prey_start_amount;
+	int predatorAmount = config.predators_start_amount;
+	while (preyAmount || predatorAmount)
+	{
+		if (m_deadEntities.empty())
+		{
+			while (preyAmount-- > 0) preyBrains.emplace_back();
+			while (predatorAmount-- > 0) predatorBrains.emplace_back();
+			return;
+		}
+		EntityPtr deadEntity = m_deadEntities.top();
+		if (preyAmount > 0 && std::dynamic_pointer_cast<Prey>(deadEntity))
+		{
+			preyBrains.push_back(deadEntity->getBrain());
+			preyAmount--;
+		}
+		else if (predatorAmount > 0 && std::dynamic_pointer_cast<Predator>(deadEntity))
+		{
+			predatorBrains.push_back(deadEntity->getBrain());
+			predatorAmount--;
+		}
+		m_deadEntities.pop();
 	}
 }
 

@@ -7,9 +7,7 @@ static int newId()
     static int id = 0;
     return ++id;
 }
-// TODO: remove that all entitites get brains
 Entity::Entity()
-	: m_brain()
 {
     m_id = newId();
     m_health = config.entity_start_health;
@@ -18,7 +16,7 @@ Entity::Entity()
 }
 
 Entity::Entity(NeuralNetwork brain)
-	: m_brain(/*brain*/)
+	: m_brain(brain)
 {
     m_id = newId();
     m_health = config.entity_start_health;
@@ -26,8 +24,20 @@ Entity::Entity(NeuralNetwork brain)
     m_signal = 0;
 }
 
+Entity::Entity(Point location)
+{
+    m_id = newId();
+    m_health = config.entity_start_health;
+    m_reproduction = 0;
+    m_signal = 0;
+	m_location.x = location.x;
+	m_location.y = location.y;
+	m_location_request.x = m_location.x;
+	m_location_request.y = m_location.y;
+}
+
 Entity::Entity(NeuralNetwork brain, Point location)
-	: m_brain(/*brain*/)
+	: m_brain(brain)
 {
     m_id = newId();
     m_health = config.entity_start_health;
@@ -75,6 +85,11 @@ void Entity::sendSignal(int signal)
 int Entity::getId() const
 {
     return m_id;
+}
+
+NeuralNetwork Entity::getBrain() const
+{
+    return m_brain;
 }
 
 Point Entity::getLocation() const

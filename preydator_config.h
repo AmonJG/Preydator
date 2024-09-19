@@ -5,6 +5,7 @@
 #include <map>
 #include <functional>
 #include <vector>
+#include <sstream>
 
 #define WORLD_X 1900
 #define WORLD_Y 1000
@@ -33,17 +34,19 @@ struct DrawInfo
 };
 
 struct PreydatorConfig {
-    int entity_start_health;
-	int entity_reproduction_goal;
-	int barriers_start_amount;
-	int plants_start_amount;
-	int prey_start_amount;
-	int predators_start_amount;
-	int tick_delay;
-	int init_hidden_layers;
-	int init_neurons_per_hidden_layer;
-	int init_mutations;
-	int offspring_mutations;
+	bool show_animation;
+    unsigned int entity_start_health;
+	unsigned int entity_reproduction_goal;
+	unsigned int barriers_start_amount;
+	unsigned int plants_start_amount;
+	unsigned int prey_start_amount;
+	unsigned int predators_start_amount;
+	unsigned int tick_delay;
+	unsigned int max_ticks_per_generation;
+	unsigned int init_hidden_layers;
+	unsigned int init_neurons_per_hidden_layer;
+	unsigned int init_mutations;
+	unsigned int offspring_mutations;
 };
 
 extern PreydatorConfig config;
@@ -51,28 +54,32 @@ extern PreydatorConfig config;
 const std::map<std::string, std::function<void(std::string)>>
 preydator_config_assign_map
 {
+	{"show_animation", [](std::string value)
+		{std::istringstream(value) >> std::boolalpha >> config.show_animation;}},
 	{"entity_start_health", [](std::string value)
-		{config.entity_start_health = std::stoi(value);}},
+		{config.entity_start_health = std::stoul(value);}},
 	{"entity_reproduction_goal", [](std::string value)
-		{config.entity_reproduction_goal = std::stoi(value);}},
+		{config.entity_reproduction_goal = std::stoul(value);}},
 	{"barriers_start_amount", [](std::string value)
-		{config.barriers_start_amount = std::stoi(value);}},
+		{config.barriers_start_amount = std::stoul(value);}},
 	{"plants_start_amount", [](std::string value)
-		{config.plants_start_amount = std::stoi(value);}},
+		{config.plants_start_amount = std::stoul(value);}},
 	{"prey_start_amount", [](std::string value)
-		{config.prey_start_amount = std::stoi(value);}},
+		{config.prey_start_amount = std::stoul(value);}},
 	{"predators_start_amount", [](std::string value)
-		{config.predators_start_amount = std::stoi(value);}},
+		{config.predators_start_amount = std::stoul(value);}},
 	{"tick_delay", [](std::string value)
-		{config.tick_delay = std::stoi(value);}},
+		{config.tick_delay = std::stoul(value);}},
+	{"max_ticks_per_generation", [](std::string value)
+		{config.max_ticks_per_generation = std::stoul(value);}},
 	{"init_hidden_layers", [](std::string value)
-		{config.init_hidden_layers = std::stoi(value);}},
+		{config.init_hidden_layers = std::stoul(value);}},
 	{"init_neurons_per_hidden_layer", [](std::string value)
-		{config.init_neurons_per_hidden_layer = std::stoi(value);}},
+		{config.init_neurons_per_hidden_layer = std::stoul(value);}},
 	{"init_mutations", [](std::string value)
-		{config.init_mutations = std::stoi(value);}},
+		{config.init_mutations = std::stoul(value);}},
 	{"offspring_mutations", [](std::string value)
-		{config.offspring_mutations = std::stoi(value);}}
+		{config.offspring_mutations = std::stoul(value);}}
 };
 
 #endif /* PREYDATOR_CONFIG_H__ */

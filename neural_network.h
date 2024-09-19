@@ -135,8 +135,9 @@ class NeuralNetwork
 {
 public:
     NeuralNetwork();
-    NeuralNetwork(NeuralNetwork const& parent_brain);
+	NeuralNetwork(const NeuralNetwork& other);
     ~NeuralNetwork();
+
 	Point decideMovement(InputLayerValues input_layer_values);
 	int getNeuronIdCounter() const;
 	void exportGraph();
@@ -149,6 +150,7 @@ private:
 	Neuron getRandNeuronFromFollowingLayers(size_t startLayerIndex);
 	void init();
 	void mutate();
+
 	std::map<InputLayerNodeIds, Neuron> m_input_layer;
 	std::map<OutputLayerNodeIds, Neuron> m_output_layer;
 	std::vector<Layer> m_hidden_layers;

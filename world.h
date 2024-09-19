@@ -10,6 +10,7 @@
 #include <atomic>
 #include <thread>
 #include <vector>
+#include <stack>
 
 using EntityPtr = std::shared_ptr<Entity>;
 
@@ -25,11 +26,9 @@ public:
     void operator=(World const&) = delete;
     static World* GetInstance();
     std::vector<EntityPtr> getEntities();
-	void initializeBarriers();
-    void startAgents();
-    void stopAgents();
-    bool alive();
-    void tick();
+	void initNewGeneration();
+	void killGeneration();
+	bool generationAlive();
     void updateAgents();
     void drawEntities();
 
@@ -38,17 +37,25 @@ protected:
     ~World();
 
 private:
+	void initializeBarriers();
+    void startAgents();
+    void stopAgents();
+    void tick();
 	void startEntityAgent(EntityPtr entity);
 	bool validMove(EntityPtr entity) const;
 	void updateEntityLocation(EntityPtr entity);
+	void selectBestBrains(std::vector<NeuralNetwork>& preyBrains, std::vector<NeuralNetwork>& predatorBrains);
 	Point getBirthLocation(EntityPtr parent);
 	InputLayerValues generateEntityPerception(EntityPtr entity);
+
     static World* m_worldSingletonInstance;
     static std::mutex m_constructorMutex;
     GraphicsHandler* m_graphicsHandler;
     std::vector<EntityPtr> m_entities;
 	std::vector<EntityPtr> m_barriers;
 	std::vector<SDL_Point> m_barrierPoints;
+	std::stack<EntityPtr> m_deadEntities;
+	bool m_generationAlive = true;
     std::condition_variable m_cv;
     std::mutex m_mtx;
     std::vector<Agent> m_agents;
