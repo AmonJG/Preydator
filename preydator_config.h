@@ -33,7 +33,8 @@ struct DrawInfo
     Color color;
 };
 
-struct PreydatorConfig {
+struct PreydatorConfig
+{
 	bool show_animation;
     unsigned int entity_start_health;
 	unsigned int entity_reproduction_goal;

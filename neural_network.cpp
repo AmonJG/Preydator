@@ -6,25 +6,7 @@
 
 NeuralNetwork::NeuralNetwork()
 {
-	// Create input layer neurons
-	for (auto perception_mapping : perception_mapping_matrix)
-	{
-		Neuron neuron = std::make_shared<Node>();
-		neuron->id = m_neuron_id_counter++;
-		neuron->value = INVALID_INPUT_LAYER_VALUE;
-		m_input_layer[perception_mapping.node_id] = neuron;
-	}
-
-	// Create output layer neurons
-	// TODO put all in two lines
-	Neuron neuron_x = std::make_shared<Node>();
-	neuron_x->id = m_neuron_id_counter++;
-	neuron_x->value = INVALID_INPUT_LAYER_VALUE;
-	m_output_layer[OutputLayerNodeIds::MOVE_X] = neuron_x;
-	Neuron neuron_y = std::make_shared<Node>();
-	neuron_y->id = m_neuron_id_counter++;
-	neuron_y->value = INVALID_INPUT_LAYER_VALUE;
-	m_output_layer[OutputLayerNodeIds::MOVE_Y] = neuron_y;
+	createInputAndOutputLayer();
 
 	// Create two hidden layers with neurons
 	for (unsigned int layerIndex = 0; layerIndex < config.init_hidden_layers; layerIndex++)
@@ -33,6 +15,7 @@ NeuralNetwork::NeuralNetwork()
 		for (unsigned int neuronIndex = 0; neuronIndex < config.init_neurons_per_hidden_layer; neuronIndex++)
 		{
 			Neuron neuron = std::make_shared<Node>();
+			m_neurons.push_back(neuron);
 			neuron->id = m_neuron_id_counter++;
 			neuron->value = 0;
 			hidden_layer.neurons.push_back(neuron);
@@ -48,11 +31,58 @@ NeuralNetwork::NeuralNetwork()
 	for (unsigned int i = 0; i < config.init_mutations; i++) mutate();
 }
 
+NeuralNetwork::NeuralNetwork(std::ifstream& in_file)
+{
+	createInputAndOutputLayer();
+	for (std::string line; std::getline(in_file, line);)
+	{
+		if (line.empty()) break;
+		if (line[0] == 'L')
+		{
+			int nodeAmount = std::stoi(line.substr(1));
+			Layer hidden_layer;
+			while (nodeAmount-- > 0)
+			{
+				Neuron neuron = std::make_shared<Node>();
+				m_neurons.push_back(neuron);
+				neuron->id = m_neuron_id_counter++;
+				neuron->value = 0;
+				hidden_layer.neurons.push_back(neuron);
+			}
+			m_hidden_layers.push_back(hidden_layer);
+		}
+		else if (line[0] == 'E')
+		{
+			size_t firstColon = line.find(':');
+			size_t secondColon = line.find(':', firstColon + 1);
+			if (firstColon == std::string::npos || secondColon == std::string::npos)
+			{
+				std::cerr << "ERROR: Missing ':' in edge input line" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			int src_neuron_id = std::stoi(line.substr(1, firstColon - 1));
+			int dst_neuron_id = std::stoi(line.substr(firstColon + 1, secondColon - firstColon - 1));
+			double weight = std::stod(line.substr(secondColon + 1));
+
+			Synapse synapse = std::make_shared<Edge>();
+			m_synapses.push_back(synapse);
+			synapse->weight = weight;
+			// Problem: setzt vorraus dass vector position == id
+			synapse->src_neuron = m_neurons[src_neuron_id];
+			synapse->dst_neuron = m_neurons[dst_neuron_id];
+			// TODO: check ob das wirklich so rekursiv geht
+			synapse->dst_neuron->incoming_edges.push_back(synapse);
+		}
+
+	}
+}
+
 NeuralNetwork::NeuralNetwork(const NeuralNetwork& other)
     : m_input_layer(other.m_input_layer),
       m_output_layer(other.m_output_layer),
       m_hidden_layers(other.m_hidden_layers),
       m_synapses(other.m_synapses),
+	  m_neurons(other.m_neurons),
       m_neuron_id_counter(other.m_neuron_id_counter)
 {
 	// Mutate offsping brain as often as configured
@@ -97,7 +127,7 @@ int NeuralNetwork::getNeuronIdCounter() const
 	return m_neuron_id_counter;
 }
 
-void NeuralNetwork::exportGraph()
+void NeuralNetwork::exportGraph(std::string entity_type)
 {
 	std::ofstream out_file;
 	std::string timestamp = getCurrentTimestamp();
@@ -108,6 +138,7 @@ void NeuralNetwork::exportGraph()
 	{
         std::cerr << "Error opening neural network graph export file!" << std::endl;
     }
+	out_file << "___" << entity_type << "___"  << std::endl;
 	out_file << "digraph {\n\trankdir=LR;\n\tranksep=5.0;\n\tsubgraph {\n\t\trank=same;" << std::endl;
 	// write input layer neurons
 	for (auto perception_mapping : perception_mapping_matrix)
@@ -143,6 +174,49 @@ void NeuralNetwork::exportGraph()
 	}
 	out_file << "}" << std::endl;
 	out_file.close();
+}
+
+std::string NeuralNetwork::getSaveString(std::string entity_type)
+{
+	std::stringstream saveString;
+	saveString << "___" << entity_type << "___"  << std::endl;
+	for (auto hidden_layer : m_hidden_layers)
+	{
+		saveString << "L" << hidden_layer.neurons.size() << std::endl;
+	}
+	for (auto synapse : m_synapses)
+	{
+		saveString << "E" << synapse->src_neuron->id << ":"
+			<< synapse->dst_neuron->id << ":" << synapse->weight << std::endl;
+	}
+	saveString << std::endl;
+	return saveString.str();
+}
+
+void NeuralNetwork::createInputAndOutputLayer()
+{
+	// Create input layer neurons
+	for (auto perception_mapping : perception_mapping_matrix)
+	{
+		Neuron neuron = std::make_shared<Node>();
+		m_neurons.push_back(neuron);
+		neuron->id = m_neuron_id_counter++;
+		neuron->value = INVALID_INPUT_LAYER_VALUE;
+		m_input_layer[perception_mapping.node_id] = neuron;
+	}
+
+	// Create output layer neurons
+	// TODO put all in two lines
+	Neuron neuron_x = std::make_shared<Node>();
+	m_neurons.push_back(neuron_x);
+	neuron_x->id = m_neuron_id_counter++;
+	neuron_x->value = INVALID_INPUT_LAYER_VALUE;
+	m_output_layer[OutputLayerNodeIds::MOVE_X] = neuron_x;
+	Neuron neuron_y = std::make_shared<Node>();
+	m_neurons.push_back(neuron_y);
+	neuron_y->id = m_neuron_id_counter++;
+	neuron_y->value = INVALID_INPUT_LAYER_VALUE;
+	m_output_layer[OutputLayerNodeIds::MOVE_Y] = neuron_y;
 }
 
 void NeuralNetwork::setInputLayer(InputLayerValues input_layer_values)
@@ -257,6 +331,7 @@ void NeuralNetwork::mutate()
 		out->weight = generateRandomDouble(-1, 1);
 
 		Neuron neuron = std::make_shared<Node>();
+		m_neurons.push_back(neuron);
 		neuron->id = m_neuron_id_counter++;
 		neuron->value = INVALID_INPUT_LAYER_VALUE;
 		neuron->incoming_edges.push_back(in);
@@ -313,6 +388,13 @@ void NeuralNetwork::mutate()
 				m_synapses[i]->dst_neuron == neuronToDelete)
 			{
 				m_synapses.erase(m_synapses.begin() + i);
+			}
+		}
+		for (size_t i = 0; i < m_neurons.size(); i++)
+		{
+			if (m_neurons[i] == neuronToDelete)
+			{
+				m_neurons.erase(m_neurons.begin() + i);
 			}
 		}
 		neurons.erase(neurons.begin() + neuronIndex);

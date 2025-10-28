@@ -7,6 +7,7 @@ static int newId()
     static int id = 0;
     return ++id;
 }
+
 Entity::Entity()
 {
     m_id = newId();
@@ -105,9 +106,4 @@ Point Entity::getLocationRequest() const
 void Entity::allowLocationUpdate()
 {
     m_allow_location_update = true;
-}
-
-void Entity::documentSelf()
-{
-	m_brain.exportGraph();
 }

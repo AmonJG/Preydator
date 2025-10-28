@@ -15,6 +15,8 @@ public:
 	double getPerceptionValue() const override;
 	bool attack(std::shared_ptr<Entity> entity) override;
 	std::shared_ptr<Entity> giveBirth(Point birthLocation) override;
+	void documentSelf() override;
+	std::string createSaveString() override;
 
 private:
 

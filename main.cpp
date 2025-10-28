@@ -23,16 +23,29 @@ void signal_handler(int signum)
 
 void usage()
 {
-    std::cout << "Usage: ./preydator" << std::endl;
+    std::cout << "Usage: ./preydator [files...]" << std::endl;
+    std::cout << "INFO: files specifies the neural networks to start the simulation with." << std::endl;
+    std::cout << "If no files are specified, all neural networks are randomly generated." << std::endl;
     exit(EXIT_FAILURE);
 }
 
 int main(int argc, char* argv[])
 {
-    if(argc != 1) usage();
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
     std::srand((unsigned int)std::time(NULL));
+
+	std::vector<std::ifstream> in_files;
+	for (int i = 1; i < argc; i++)
+	{
+		in_files.emplace_back();
+		in_files[i-1].open(argv[i]);
+		if (!in_files[i-1].is_open())
+		{
+			std::cerr << "Error opening input file: " << argv[i] << std::endl;
+			return -1;
+		}
+	}
 
 	config_file.open(config_file_name);
 	if (!config_file.is_open())
@@ -53,15 +66,25 @@ int main(int argc, char* argv[])
 	}
 
     World* world = World::GetInstance();
-    while (!quit)
-    {
+	if(in_files.empty())
+	{
 		world->initNewGeneration();
+	}
+	else
+	{
+		if (!world->initSavedGeneration(in_files)) return -1;
+	}
+
+    while (true)
+    {
 		while (!quit && world->generationAlive())
 		{
 			world->updateAgents();
 			world->drawEntities();
 		}
 		world->killGeneration();
+		if (quit) break;
+		world->initNewGeneration();
     }
 
     // Start initial Agent Threads

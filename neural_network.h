@@ -135,14 +135,17 @@ class NeuralNetwork
 {
 public:
     NeuralNetwork();
+	NeuralNetwork(std::ifstream& in_file);
 	NeuralNetwork(const NeuralNetwork& other);
     ~NeuralNetwork();
 
 	Point decideMovement(InputLayerValues input_layer_values);
 	int getNeuronIdCounter() const;
-	void exportGraph();
+	void exportGraph(std::string entity_type);
+	std::string getSaveString(std::string entity_type);
 
 private:
+	void createInputAndOutputLayer();
 	void setInputLayer(InputLayerValues input_layer_values);
 	void calculateNeuronValue(Neuron neuron);
 	Neuron getRandInputLayerNeuron();
@@ -155,6 +158,7 @@ private:
 	std::map<OutputLayerNodeIds, Neuron> m_output_layer;
 	std::vector<Layer> m_hidden_layers;
 	std::vector<Synapse> m_synapses;
+	std::vector<Neuron> m_neurons;
 	int m_neuron_id_counter = 0;
 };
 

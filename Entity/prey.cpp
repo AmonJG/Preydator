@@ -56,3 +56,13 @@ std::shared_ptr<Entity> Prey::giveBirth(Point birthLocation)
 	m_reproduction = 0;
 	return std::make_shared<Prey>(m_brain, birthLocation);
 }
+
+void Prey::documentSelf()
+{
+	m_brain.exportGraph("Prey");
+}
+
+std::string Prey::createSaveString()
+{
+	return m_brain.getSaveString("Prey");
+}

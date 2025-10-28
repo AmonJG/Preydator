@@ -27,6 +27,7 @@ public:
     static World* GetInstance();
     std::vector<EntityPtr> getEntities();
 	void initNewGeneration();
+	bool initSavedGeneration(std::vector<std::ifstream>& in_files);
 	void killGeneration();
 	bool generationAlive();
     void updateAgents();
@@ -37,6 +38,7 @@ protected:
     ~World();
 
 private:
+	void initGeneration(std::vector<NeuralNetwork> const& preyBrains, std::vector<NeuralNetwork> const& predatorBrains);
 	void initializeBarriers();
     void startAgents();
     void stopAgents();
@@ -47,6 +49,7 @@ private:
 	void selectBestBrains(std::vector<NeuralNetwork>& preyBrains, std::vector<NeuralNetwork>& predatorBrains);
 	Point getBirthLocation(EntityPtr parent);
 	InputLayerValues generateEntityPerception(EntityPtr entity);
+	void createEntitySaveFile();
 
     static World* m_worldSingletonInstance;
     static std::mutex m_constructorMutex;

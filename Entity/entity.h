@@ -31,7 +31,8 @@ public:
     Point getLocation() const;
     Point getLocationRequest() const;
 	void allowLocationUpdate();
-	void documentSelf();
+	virtual void documentSelf() = 0;
+	virtual std::string createSaveString() = 0;
 	virtual double getPerceptionValue() const = 0;
 	virtual bool attack(std::shared_ptr<Entity> entity) = 0;
 	virtual std::shared_ptr<Entity> giveBirth(Point birthLocation) = 0;

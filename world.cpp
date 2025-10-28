@@ -10,11 +10,19 @@
 #include <thread>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 static EntityPtr occupiedSpace[WORLD_X][WORLD_Y] = {nullptr};
 static unsigned int tickCounter = 0;
 static unsigned int generationCounter = 0;
 std::ofstream populationDataFile;
+
+static bool parseError(size_t index, std::string reason)
+{
+	std::cerr << "Error parsing input file with index: " << index << std::endl;
+	std::cerr << "Reason: " << reason << std::endl;
+	return false;
+}
 
 World* World::m_worldSingletonInstance = nullptr;
 std::mutex World::m_constructorMutex;
@@ -59,30 +67,75 @@ std::vector<EntityPtr> World::getEntities()
 
 void World::initNewGeneration()
 {
-	std::cout << "Generation: " << ++generationCounter << std::endl;
-	m_generationAlive = true;
 	std::vector<NeuralNetwork> preyBrains;
 	std::vector<NeuralNetwork> predatorBrains;
 	selectBestBrains(preyBrains, predatorBrains);
+	initGeneration(preyBrains, predatorBrains);
+}
 
-    for(unsigned int i = 0; i < config.barriers_start_amount; i++)
-    {
-        m_barriers.push_back(std::make_shared<Barrier>());
-    }
-	for(unsigned int i = 0; i < config.plants_start_amount; i++)
-    {
-        m_entities.push_back(std::make_shared<Plant>());
-    }
-	for(unsigned int i = 0; i < config.prey_start_amount; i++)
-    {
-        m_entities.push_back(std::make_shared<Prey>(preyBrains[i]));
-    }
-	for(unsigned int i = 0; i < config.predators_start_amount; i++)
-    {
-        m_entities.push_back(std::make_shared<Predator>(predatorBrains[i]));
-    }
-	initializeBarriers();
-    startAgents();
+bool World::initSavedGeneration(std::vector<std::ifstream>& in_files)
+{
+	std::vector<NeuralNetwork> preyBrains;
+	std::vector<NeuralNetwork> predatorBrains;
+	bool isPreyBrain = false;
+	for (size_t i = 0; i < in_files.size(); i++)
+	{
+		for (std::string line; std::getline(in_files[i], line);)
+		{
+			if(line == "___Prey___")
+			{
+				isPreyBrain = true;
+			}
+			else if(line == "___Predator___")
+			{
+				isPreyBrain = false;
+			}
+			else
+			{
+				return parseError(i, "No entity type defined in input file");
+			}
+			NeuralNetwork brain = NeuralNetwork(in_files[i]);
+			isPreyBrain ? preyBrains.push_back(brain) : predatorBrains.push_back(brain);
+		}
+	}
+
+	if (preyBrains.size() > config.prey_start_amount)
+	{
+		std::cerr << "WARNING: Prey amount truncated from "
+			<< preyBrains.size() << " to config defined prey_start_amount "
+			<< config.prey_start_amount << std::endl;
+		preyBrains.resize(config.prey_start_amount);
+	}
+	if (preyBrains.size() < config.prey_start_amount)
+	{
+		std::cerr << "WARNING: Prey amount increased from "
+			<< preyBrains.size() << " to config defined prey_start_amount "
+			<< config.prey_start_amount << " with random brains" << std::endl;
+		while(preyBrains.size() < config.prey_start_amount)
+		{
+			preyBrains.emplace_back();
+		}
+	}
+	if (predatorBrains.size() > config.predators_start_amount)
+	{
+		std::cerr << "WARNING: Predator amount truncated from "
+			<< predatorBrains.size() << " to config defined predators_start_amount "
+			<< config.predators_start_amount << std::endl;
+		predatorBrains.resize(config.predators_start_amount);
+	}
+	if (predatorBrains.size() < config.predators_start_amount)
+	{
+		std::cerr << "WARNING: Predator amount increased from "
+			<< predatorBrains.size() << " to config defined predators_start_amount "
+			<< config.predators_start_amount << " with random brains" << std::endl;
+		while(predatorBrains.size() < config.predators_start_amount)
+		{
+			predatorBrains.emplace_back();
+		}
+	}
+
+	initGeneration(preyBrains, predatorBrains);
+	return true;
 }
 
 void World::killGeneration()
@@ -193,6 +246,31 @@ void World::drawEntities()
     m_graphicsHandler->render();
 }
 
+void World::initGeneration(std::vector<NeuralNetwork> const& preyBrains, std::vector<NeuralNetwork> const& predatorBrains)
+{
+	std::cout << "Generation: " << ++generationCounter << std::endl;
+	m_generationAlive = true;
+
+    for(unsigned int i = 0; i < config.barriers_start_amount; i++)
+    {
+        m_barriers.push_back(std::make_shared<Barrier>());
+    }
+	for(unsigned int i = 0; i < config.plants_start_amount; i++)
+    {
+        m_entities.push_back(std::make_shared<Plant>());
+    }
+	for(unsigned int i = 0; i < config.prey_start_amount; i++)
+    {
+        m_entities.push_back(std::make_shared<Prey>(preyBrains[i]));
+    }
+	for(unsigned int i = 0; i < config.predators_start_amount; i++)
+    {
+        m_entities.push_back(std::make_shared<Predator>(predatorBrains[i]));
+    }
+	initializeBarriers();
+    startAgents();
+}
+
 void World::initializeBarriers()
 {
 	for(auto& barrier : m_barriers)
@@ -223,6 +301,7 @@ void World::startAgents()
 void World::stopAgents()
 {
     m_stopFlag.store(-1, std::memory_order_relaxed);
+	createEntitySaveFile();
 	// document one entity for testing
 	m_agents.back().entity->documentSelf();
     tick();
@@ -377,4 +456,22 @@ InputLayerValues World::generateEntityPerception(EntityPtr entity)
 		}
 	}
 	return input_layer_values;
+}
+
+void World::createEntitySaveFile()
+{
+	std::ofstream out_file;
+	std::string timestamp = getCurrentTimestamp();
+	std::string filename = "data/entitySaveFile_" + timestamp + ".dat";
+	out_file.open(filename);
+
+    if (!out_file.is_open())
+	{
+        std::cerr << "Error opening entity save file!" << std::endl;
+    }
+	for (auto entity : m_entities)
+	{
+		out_file << entity->createSaveString();
+	}
+	out_file.close();
 }
