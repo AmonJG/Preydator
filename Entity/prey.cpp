@@ -25,7 +25,7 @@ void Prey::action()
 
 void Prey::perceive(InputLayerValues perception)
 {
-	m_desired_movement = m_brain.decideMovement(perception);
+	m_desired_movement = m_brain->decideMovement(perception);
 }
 
 DrawInfo Prey::getDrawInfo() const
@@ -59,10 +59,10 @@ std::shared_ptr<Entity> Prey::giveBirth(Point birthLocation)
 
 std::string Prey::documentSelf()
 {
-	return m_brain.exportGraph("Prey");
+	return m_brain->exportGraph("Prey");
 }
 
 std::string Prey::createSaveString()
 {
-	return m_brain.getSaveString("Prey");
+	return m_brain->getSaveString("Prey");
 }

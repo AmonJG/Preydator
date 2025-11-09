@@ -38,7 +38,7 @@ protected:
     ~World();
 
 private:
-	void initGeneration(std::vector<NeuralNetwork> const& preyBrains, std::vector<NeuralNetwork> const& predatorBrains);
+	void initGeneration(std::vector<NeuralNetworkPtr> const& preyBrains, std::vector<NeuralNetworkPtr> const& predatorBrains);
 	void initializeBarriers();
     void startAgents();
     void stopAgents();
@@ -46,7 +46,7 @@ private:
 	void startEntityAgent(EntityPtr entity);
 	bool validMove(EntityPtr entity) const;
 	void updateEntityLocation(EntityPtr entity);
-	void selectBestBrains(std::vector<NeuralNetwork>& preyBrains, std::vector<NeuralNetwork>& predatorBrains);
+	void selectBestBrains(std::vector<NeuralNetworkPtr>& preyBrains, std::vector<NeuralNetworkPtr>& predatorBrains);
 	Point getBirthLocation(EntityPtr parent);
 	InputLayerValues generateEntityPerception(EntityPtr entity);
 	void createEntitySaveFile();

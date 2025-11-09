@@ -81,8 +81,8 @@ std::vector<EntityPtr> World::getEntities()
 
 void World::initNewGeneration()
 {
-	std::vector<NeuralNetwork> preyBrains;
-	std::vector<NeuralNetwork> predatorBrains;
+	std::vector<NeuralNetworkPtr> preyBrains;
+	std::vector<NeuralNetworkPtr> predatorBrains;
 	selectBestBrains(preyBrains, predatorBrains);
 	initGeneration(preyBrains, predatorBrains);
 }
@@ -90,8 +90,8 @@ void World::initNewGeneration()
 bool World::initSavedGeneration(std::string const& in_file_path)
 {
 	logFile << "[INFO] Execution initialized with input file: " << in_file_path << std::endl;
-	std::vector<NeuralNetwork> preyBrains;
-	std::vector<NeuralNetwork> predatorBrains;
+	std::vector<NeuralNetworkPtr> preyBrains;
+	std::vector<NeuralNetworkPtr> predatorBrains;
 	std::ifstream in_file;
 	in_file.open(in_file_path);
 	if (!in_file.is_open())
@@ -114,7 +114,7 @@ bool World::initSavedGeneration(std::string const& in_file_path)
 		{
 			return parseError("No entity type defined in input file");
 		}
-		NeuralNetwork brain = NeuralNetwork(in_file);
+		NeuralNetworkPtr brain = std::make_shared<NeuralNetwork>(in_file);
 		isPreyBrain ? preyBrains.push_back(brain) : predatorBrains.push_back(brain);
 	}
 
@@ -132,7 +132,7 @@ bool World::initSavedGeneration(std::string const& in_file_path)
 			<< config.prey_start_amount << " with random brains" << std::endl;
 		while(preyBrains.size() < config.prey_start_amount)
 		{
-			preyBrains.emplace_back();
+			preyBrains.emplace_back(std::make_shared<NeuralNetwork>());
 		}
 	}
 	if (predatorBrains.size() > config.predators_start_amount)
@@ -149,7 +149,7 @@ bool World::initSavedGeneration(std::string const& in_file_path)
 			<< config.predators_start_amount << " with random brains" << std::endl;
 		while(predatorBrains.size() < config.predators_start_amount)
 		{
-			predatorBrains.emplace_back();
+			predatorBrains.emplace_back(std::make_shared<NeuralNetwork>());
 		}
 	}
 
@@ -213,8 +213,8 @@ void World::updateAgents()
 			if (birthLocation.x >= 0 && birthLocation.y >= 0)
 			{
 				entitiesToStart.push_back((*itr).entity->giveBirth(birthLocation));
-				logFile << "Entity " << (*itr).entity->getId() << " produced offspring entity "
-					<< entitiesToStart.back()->getId() << std::endl;
+				//logFile << "Entity " << (*itr).entity->getId() << " produced offspring entity "
+				//	<< entitiesToStart.back()->getId() << std::endl;
 			}
 		}
 		// If entity has no healt
@@ -257,7 +257,7 @@ void World::updateAgents()
 		std::lock_guard<std::mutex> lk(m_mtx);
 		m_entities.push_back(entity);
 		startEntityAgent(entity);
-		logFile << "Started newborn entity: " << entity->getId() << std::endl;
+		//logFile << "Started newborn entity: " << entity->getId() << std::endl;
 	}
 }
 
@@ -272,7 +272,7 @@ void World::drawEntities()
     m_graphicsHandler->render();
 }
 
-void World::initGeneration(std::vector<NeuralNetwork> const& preyBrains, std::vector<NeuralNetwork> const& predatorBrains)
+void World::initGeneration(std::vector<NeuralNetworkPtr> const& preyBrains, std::vector<NeuralNetworkPtr> const& predatorBrains)
 {
 	std::string currentTimestamp = getCurrentTimestamp();
 	std::cout << currentTimestamp << " Generation: " << ++generationCounter << std::endl;
@@ -339,7 +339,7 @@ void World::stopAgents()
 	std::cout << std::endl;
     for(auto& agent : m_agents)
     {
-		logFile << "Join agent: " << agent.entity->getId() << std::endl;
+		//logFile << "Join agent: " << agent.entity->getId() << std::endl;
         agent.thread.join();
     }
 	logFile << "[INFO] All " << m_agents.size()
@@ -407,7 +407,7 @@ void World::updateEntityLocation(EntityPtr entity)
 }
 
 
-void World::selectBestBrains(std::vector<NeuralNetwork>& preyBrains, std::vector<NeuralNetwork>& predatorBrains)
+void World::selectBestBrains(std::vector<NeuralNetworkPtr>& preyBrains, std::vector<NeuralNetworkPtr>& predatorBrains)
 {
 	int preyAmount = config.prey_start_amount;
 	int predatorAmount = config.predators_start_amount;
@@ -417,8 +417,8 @@ void World::selectBestBrains(std::vector<NeuralNetwork>& preyBrains, std::vector
 		{
 			logFile << "[INFO] Execution initialized without old entities." << std::endl;
 			logFile << "[INFO] Generating random neural networks..." << std::endl;
-			while (preyAmount-- > 0) preyBrains.emplace_back();
-			while (predatorAmount-- > 0) predatorBrains.emplace_back();
+			while (preyAmount-- > 0) preyBrains.emplace_back(std::make_shared<NeuralNetwork>());
+			while (predatorAmount-- > 0) predatorBrains.emplace_back(std::make_shared<NeuralNetwork>());
 			return;
 		}
 		EntityPtr deadEntity = m_deadEntities.top();

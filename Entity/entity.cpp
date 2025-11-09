@@ -17,7 +17,7 @@ Entity::Entity()
     m_signal = 0;
 }
 
-Entity::Entity(NeuralNetwork brain)
+Entity::Entity(NeuralNetworkPtr brain)
 	: m_brain(brain)
 {
     m_id = newId();
@@ -40,7 +40,7 @@ Entity::Entity(Point location)
 	m_location_request.y = m_location.y;
 }
 
-Entity::Entity(NeuralNetwork brain, Point location)
+Entity::Entity(NeuralNetworkPtr brain, Point location)
 	: m_brain(brain)
 {
     m_id = newId();
@@ -96,7 +96,7 @@ int Entity::getId() const
     return m_id;
 }
 
-NeuralNetwork Entity::getBrain() const
+NeuralNetworkPtr Entity::getBrain() const
 {
     return m_brain;
 }

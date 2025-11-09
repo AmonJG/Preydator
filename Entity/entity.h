@@ -13,9 +13,9 @@ class Entity
 {
 public:
     Entity();
-    Entity(NeuralNetwork brain);
+    Entity(NeuralNetworkPtr brain);
     Entity(Point location);
-    Entity(NeuralNetwork brain, Point location);
+    Entity(NeuralNetworkPtr brain, Point location);
     virtual ~Entity() = default;
 	virtual void spawn() = 0;
     void run(std::atomic<int>& stopFlag);
@@ -27,7 +27,7 @@ public:
     void sendSignal(int signal);
     virtual DrawInfo getDrawInfo() const = 0;
     int getId() const;
-	NeuralNetwork getBrain() const;
+	NeuralNetworkPtr getBrain() const;
     Point getLocation() const;
     Point getLocationRequest() const;
 	void allowLocationUpdate();
@@ -39,7 +39,7 @@ public:
 
 protected:
     int m_id;
-	NeuralNetwork m_brain;
+	NeuralNetworkPtr m_brain;
     Point m_location;
 	Point m_location_request;
 	Point m_desired_movement;

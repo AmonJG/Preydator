@@ -25,7 +25,7 @@ void Predator::action()
 
 void Predator::perceive(InputLayerValues perception)
 {
-	m_desired_movement = m_brain.decideMovement(perception);
+	m_desired_movement = m_brain->decideMovement(perception);
 }
 
 DrawInfo Predator::getDrawInfo() const
@@ -59,10 +59,10 @@ std::shared_ptr<Entity> Predator::giveBirth(Point birthLocation)
 
 std::string Predator::documentSelf()
 {
-	return m_brain.exportGraph("Predator");
+	return m_brain->exportGraph("Predator");
 }
 
 std::string Predator::createSaveString()
 {
-	return m_brain.getSaveString("Predator");
+	return m_brain->getSaveString("Predator");
 }

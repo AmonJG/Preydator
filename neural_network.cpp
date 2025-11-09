@@ -24,9 +24,10 @@ NeuralNetwork::NeuralNetwork()
 	}
 
 	// Create random brain
-	// Initializing synapses for every neuron (two times)
+	// Initializing synapses for every neuron (two times) WIESO 2x????
+	//init();
 	init();
-	init();
+	std::cout << "CONTRUCT NN ";
 	// Mutate new brain as often as configured
 	for (unsigned int i = 0; i < config.init_mutations; i++) mutate();
 }
@@ -86,6 +87,7 @@ NeuralNetwork::NeuralNetwork(const NeuralNetwork& other)
       m_neuron_id_counter(other.m_neuron_id_counter)
 {
 	// Mutate offsping brain as often as configured
+	std::cout << "COPY BRAIN";
 	for (unsigned int i = 0; i < config.offspring_mutations; i++) mutate();
 }
 

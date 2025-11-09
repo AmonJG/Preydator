@@ -162,4 +162,6 @@ private:
 	int m_neuron_id_counter = 0;
 };
 
+using NeuralNetworkPtr = std::shared_ptr<NeuralNetwork>;
+
 #endif /* PREYDATOR_NEURAL_NETWORK_H__ */
