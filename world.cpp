@@ -11,15 +11,18 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 
 static EntityPtr occupiedSpace[WORLD_X][WORLD_Y] = {nullptr};
 static unsigned int tickCounter = 0;
 static unsigned int generationCounter = 0;
 std::ofstream populationDataFile;
+std::ofstream logFile;
+std::string dataPath;
 
-static bool parseError(size_t index, std::string reason)
+static bool parseError(std::string reason)
 {
-	std::cerr << "Error parsing input file with index: " << index << std::endl;
+	std::cerr << "Error parsing input file" << std::endl;
 	std::cerr << "Reason: " << reason << std::endl;
 	return false;
 }
@@ -45,12 +48,22 @@ World::World()
 	}
 
 	std::string timestamp = getCurrentTimestamp();
-    std::string filename = "data/populationData_" + timestamp + ".csv";
+	dataPath = "data/exec_" + timestamp;
+	std::filesystem::create_directory(dataPath);
+	dataPath += "/";
+
+    std::string filename = dataPath + "populationData_" + timestamp + ".csv";
     populationDataFile.open(filename);
+	filename = dataPath + "preydator_" + timestamp + ".log";
+	logFile.open(filename);
 
     if (!populationDataFile.is_open())
 	{
         std::cerr << "Error opening population data file!" << std::endl;
+    }
+	if (!logFile.is_open())
+	{
+        std::cerr << "Error opening log file!" << std::endl;
     }
 	populationDataFile << "Tick,Predators,Preys,Plants" << std::endl;
 }
@@ -58,6 +71,7 @@ World::World()
 World::~World()
 {
     populationDataFile.close();
+	logFile.close();
 }
 
 std::vector<EntityPtr> World::getEntities()
@@ -73,30 +87,35 @@ void World::initNewGeneration()
 	initGeneration(preyBrains, predatorBrains);
 }
 
-bool World::initSavedGeneration(std::vector<std::ifstream>& in_files)
+bool World::initSavedGeneration(std::string const& in_file_path)
 {
+	logFile << "[INFO] Execution initialized with input file: " << in_file_path << std::endl;
 	std::vector<NeuralNetwork> preyBrains;
 	std::vector<NeuralNetwork> predatorBrains;
-	bool isPreyBrain = false;
-	for (size_t i = 0; i < in_files.size(); i++)
+	std::ifstream in_file;
+	in_file.open(in_file_path);
+	if (!in_file.is_open())
 	{
-		for (std::string line; std::getline(in_files[i], line);)
+		std::cerr << "Error opening input file: " << in_file_path << std::endl;
+		return false;
+	}
+	bool isPreyBrain = false;
+	for (std::string line; std::getline(in_file, line);)
+	{
+		if(line == "___Prey___")
 		{
-			if(line == "___Prey___")
-			{
-				isPreyBrain = true;
-			}
-			else if(line == "___Predator___")
-			{
-				isPreyBrain = false;
-			}
-			else
-			{
-				return parseError(i, "No entity type defined in input file");
-			}
-			NeuralNetwork brain = NeuralNetwork(in_files[i]);
-			isPreyBrain ? preyBrains.push_back(brain) : predatorBrains.push_back(brain);
+			isPreyBrain = true;
 		}
+		else if(line == "___Predator___")
+		{
+			isPreyBrain = false;
+		}
+		else
+		{
+			return parseError("No entity type defined in input file");
+		}
+		NeuralNetwork brain = NeuralNetwork(in_file);
+		isPreyBrain ? preyBrains.push_back(brain) : predatorBrains.push_back(brain);
 	}
 
 	if (preyBrains.size() > config.prey_start_amount)
@@ -135,6 +154,7 @@ bool World::initSavedGeneration(std::vector<std::ifstream>& in_files)
 	}
 
 	initGeneration(preyBrains, predatorBrains);
+	in_file.close();
 	return true;
 }
 
@@ -147,6 +167,7 @@ void World::killGeneration()
 			m_deadEntities.push(entity);
 		}
 	}
+	logFile << "[INFO] Killing " << m_agents.size() << " agents" << std::endl;
 	stopAgents();
 	m_agents.clear();
 	m_entities.clear();
@@ -192,6 +213,8 @@ void World::updateAgents()
 			if (birthLocation.x >= 0 && birthLocation.y >= 0)
 			{
 				entitiesToStart.push_back((*itr).entity->giveBirth(birthLocation));
+				logFile << "Entity " << (*itr).entity->getId() << " produced offspring entity "
+					<< entitiesToStart.back()->getId() << std::endl;
 			}
 		}
 		// If entity has no healt
@@ -212,8 +235,8 @@ void World::updateAgents()
 	populationDataFile << tickCounter << "," << predatorPopulation << "," << preyPopulation << "," << plantPopulation << std::endl;
 	if (predatorPopulation == 0 || preyPopulation == 0) m_generationAlive = false;
 	// Execute one World tick
-    tick();
-	if (tickCounter > config.max_ticks_per_generation) m_generationAlive = false;
+    tick(config.tick_delay);
+	if (tickCounter >= config.max_ticks_per_generation) m_generationAlive = false;
 	// Kill and remove all joinable Agents and their threads from last tick
     for(auto agent = agentsToTerminate.rbegin(); agent != agentsToTerminate.rend(); ++agent)
     {
@@ -221,17 +244,20 @@ void World::updateAgents()
 		{
 			m_deadEntities.push((**agent).entity);
 		}
-        //std::cout << "join: " << (**agent).entity->getId() << std::endl;
+        //logFile << "join: " << (**agent).entity->getId() << std::endl;
         (**agent).thread.join();
-        //std::cout << "erase: " << (**agent).entity->getId() << std::endl;
+        //logFile << "agents size: " << m_agents.size() << std::endl;
+        //logFile << "erase: " << (**agent).entity->getId() << std::endl;
 		m_agents.erase(*agent);
-        //std::cout << "done: " << (**agent).entity->getId() << std::endl;
+        //logFile << "agents size: " << m_agents.size() << std::endl;
     }
 	// Start new agents that have been born
 	for(auto entity : entitiesToStart)
 	{
+		std::lock_guard<std::mutex> lk(m_mtx);
 		m_entities.push_back(entity);
 		startEntityAgent(entity);
+		logFile << "Started newborn entity: " << entity->getId() << std::endl;
 	}
 }
 
@@ -248,7 +274,9 @@ void World::drawEntities()
 
 void World::initGeneration(std::vector<NeuralNetwork> const& preyBrains, std::vector<NeuralNetwork> const& predatorBrains)
 {
-	std::cout << "Generation: " << ++generationCounter << std::endl;
+	std::string currentTimestamp = getCurrentTimestamp();
+	std::cout << currentTimestamp << " Generation: " << ++generationCounter << std::endl;
+	logFile << currentTimestamp << " Generation: " << generationCounter << std::endl;
 	m_generationAlive = true;
 
     for(unsigned int i = 0; i < config.barriers_start_amount; i++)
@@ -296,6 +324,8 @@ void World::startAgents()
 		startEntityAgent(entity);
     }
     m_cv.notify_all();
+	logFile << "[INFO] All " << m_agents.size()
+		<< " agents have been started for current generation." << std::endl;
 }
 
 void World::stopAgents()
@@ -303,25 +333,36 @@ void World::stopAgents()
     m_stopFlag.store(-1, std::memory_order_relaxed);
 	createEntitySaveFile();
 	// document one entity for testing
-	m_agents.back().entity->documentSelf();
-    tick();
+	//m_agents.back().entity->documentSelf();
+	createNeuralNetworkGraphs();
+    tick(1000);
+	std::cout << std::endl;
     for(auto& agent : m_agents)
     {
+		logFile << "Join agent: " << agent.entity->getId() << std::endl;
         agent.thread.join();
     }
+	logFile << "[INFO] All " << m_agents.size()
+		<< " agents have been stopped for current generation." << std::endl;
 }
 
-void World::tick()
+void World::tick(int microseconds)
 {
-	tickCounter++;
-    m_haltAgents2 = true;
-    m_haltAgents = false;
-    m_cv.notify_all();
-    std::this_thread::sleep_for(std::chrono::microseconds(config.tick_delay));
-    m_haltAgents = true;
-    m_haltAgents2 = false;
-    m_cv.notify_all();
-    std::this_thread::sleep_for(std::chrono::microseconds(config.tick_delay));
+	std::cout << "\rTick: " << tickCounter++ << "/" << config.max_ticks_per_generation << std::flush;
+	{
+		//std::lock_guard<std::mutex> lk(m_mtx);
+		m_haltAgents2 = true;
+		m_haltAgents = false;
+	}
+	m_cv.notify_all();
+    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+    {
+		//std::lock_guard<std::mutex> lk(m_mtx);
+		m_haltAgents = true;
+		m_haltAgents2 = false;
+	}
+	m_cv.notify_all();
+    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
 }
 
 void World::startEntityAgent(EntityPtr entity)
@@ -374,6 +415,8 @@ void World::selectBestBrains(std::vector<NeuralNetwork>& preyBrains, std::vector
 	{
 		if (m_deadEntities.empty())
 		{
+			logFile << "[INFO] Execution initialized without old entities." << std::endl;
+			logFile << "[INFO] Generating random neural networks..." << std::endl;
 			while (preyAmount-- > 0) preyBrains.emplace_back();
 			while (predatorAmount-- > 0) predatorBrains.emplace_back();
 			return;
@@ -391,6 +434,7 @@ void World::selectBestBrains(std::vector<NeuralNetwork>& preyBrains, std::vector
 		}
 		m_deadEntities.pop();
 	}
+	while (!m_deadEntities.empty()) m_deadEntities.pop();
 }
 
 Point World::getBirthLocation(EntityPtr parent)
@@ -462,7 +506,8 @@ void World::createEntitySaveFile()
 {
 	std::ofstream out_file;
 	std::string timestamp = getCurrentTimestamp();
-	std::string filename = "data/entitySaveFile_" + timestamp + ".dat";
+	std::string filename = dataPath + "entitySaveFile_Gen_" + std::to_string(generationCounter)
+		+ "_" + timestamp + ".dat";
 	out_file.open(filename);
 
     if (!out_file.is_open())
@@ -472,6 +517,25 @@ void World::createEntitySaveFile()
 	for (auto entity : m_entities)
 	{
 		out_file << entity->createSaveString();
+	}
+	out_file.close();
+}
+
+void World::createNeuralNetworkGraphs()
+{
+	std::ofstream out_file;
+	std::string timestamp = getCurrentTimestamp();
+	std::string filename = dataPath + "neuralNetworkGraphs_Gen_" + std::to_string(generationCounter)
+		+ "_" + timestamp + ".dot";
+	out_file.open(filename);
+
+	if (!out_file.is_open())
+	{
+		std::cerr << "Error opening neural network graph export file!" << std::endl;
+	}
+	for (auto entity : m_entities)
+	{
+		out_file << entity->documentSelf();
 	}
 	out_file.close();
 }

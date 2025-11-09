@@ -11,7 +11,7 @@ void Predator::spawn()
 
 void Predator::action()
 {
-    m_health -= std::rand() % 3;
+    m_health -= (std::rand() % 3) + 2;
 	if(m_health <= 0) m_signal |= 0x1;
 	if (m_allow_location_update)
 	{
@@ -57,9 +57,9 @@ std::shared_ptr<Entity> Predator::giveBirth(Point birthLocation)
 	return std::make_shared<Predator>(m_brain, birthLocation);
 }
 
-void Predator::documentSelf()
+std::string Predator::documentSelf()
 {
-	m_brain.exportGraph("Predator");
+	return m_brain.exportGraph("Predator");
 }
 
 std::string Predator::createSaveString()

@@ -23,9 +23,9 @@ void signal_handler(int signum)
 
 void usage()
 {
-    std::cout << "Usage: ./preydator [files...]" << std::endl;
-    std::cout << "INFO: files specifies the neural networks to start the simulation with." << std::endl;
-    std::cout << "If no files are specified, all neural networks are randomly generated." << std::endl;
+    std::cout << "Usage: ./preydator [file]" << std::endl;
+    std::cout << "INFO: file specifies the neural networks to start the simulation with." << std::endl;
+    std::cout << "If no file is specified, all neural networks are randomly generated." << std::endl;
     exit(EXIT_FAILURE);
 }
 
@@ -35,16 +35,10 @@ int main(int argc, char* argv[])
     signal(SIGTERM, signal_handler);
     std::srand((unsigned int)std::time(NULL));
 
-	std::vector<std::ifstream> in_files;
-	for (int i = 1; i < argc; i++)
+	std::string in_file_path;
+	if (argc == 2)
 	{
-		in_files.emplace_back();
-		in_files[i-1].open(argv[i]);
-		if (!in_files[i-1].is_open())
-		{
-			std::cerr << "Error opening input file: " << argv[i] << std::endl;
-			return -1;
-		}
+		in_file_path = argv[1];
 	}
 
 	config_file.open(config_file_name);
@@ -66,13 +60,13 @@ int main(int argc, char* argv[])
 	}
 
     World* world = World::GetInstance();
-	if(in_files.empty())
+	if(in_file_path.empty())
 	{
 		world->initNewGeneration();
 	}
 	else
 	{
-		if (!world->initSavedGeneration(in_files)) return -1;
+		if (!world->initSavedGeneration(in_file_path)) return -1;
 	}
 
     while (true)

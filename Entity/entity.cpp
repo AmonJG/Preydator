@@ -11,6 +11,7 @@ static int newId()
 Entity::Entity()
 {
     m_id = newId();
+	m_allow_location_update = true;
     m_health = config.entity_start_health;
     m_reproduction = 0;
     m_signal = 0;
@@ -20,6 +21,7 @@ Entity::Entity(NeuralNetwork brain)
 	: m_brain(brain)
 {
     m_id = newId();
+	m_allow_location_update = true;
     m_health = config.entity_start_health;
     m_reproduction = 0;
     m_signal = 0;
@@ -28,6 +30,7 @@ Entity::Entity(NeuralNetwork brain)
 Entity::Entity(Point location)
 {
     m_id = newId();
+	m_allow_location_update = true;
     m_health = config.entity_start_health;
     m_reproduction = 0;
     m_signal = 0;
@@ -41,6 +44,7 @@ Entity::Entity(NeuralNetwork brain, Point location)
 	: m_brain(brain)
 {
     m_id = newId();
+	m_allow_location_update = true;
     m_health = config.entity_start_health;
     m_reproduction = 0;
     m_signal = 0;
@@ -52,12 +56,16 @@ Entity::Entity(NeuralNetwork brain, Point location)
 
 void Entity::run(std::atomic<int>& stopFlag)
 {
+    //printf("%d started!\n", m_id);
     while(stopFlag.load(std::memory_order_relaxed) >= 0 && m_signal == 0)
     {
         std::unique_lock<std::mutex> lk(*mp_mtx);
-        while(*mp_haltAgents) mp_cv->wait(lk);
-        action();
-        while(*mp_haltAgents2) mp_cv->wait(lk);
+		//printf("%d start tick!\n", m_id);
+		mp_cv->wait(lk, [&]{ return !*mp_haltAgents; });
+		action();
+		//printf("%d action done!\n", m_id);
+		mp_cv->wait(lk, [&]{ return !*mp_haltAgents2; });
+		//printf("%d loop done!\n", m_id);
     }
     //printf("%d terminated!\n", m_id);
 }

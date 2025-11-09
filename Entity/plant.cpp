@@ -43,8 +43,9 @@ std::shared_ptr<Entity> Plant::giveBirth(Point birthLocation)
 	return std::make_shared<Plant>(birthLocation);
 }
 
-void Plant::documentSelf()
+std::string Plant::documentSelf()
 {
+	return "";
 }
 
 std::string Plant::createSaveString()

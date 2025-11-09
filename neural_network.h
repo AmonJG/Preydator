@@ -141,7 +141,7 @@ public:
 
 	Point decideMovement(InputLayerValues input_layer_values);
 	int getNeuronIdCounter() const;
-	void exportGraph(std::string entity_type);
+	std::string exportGraph(std::string entity_type);
 	std::string getSaveString(std::string entity_type);
 
 private:

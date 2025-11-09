@@ -1,5 +1,5 @@
 CC := g++
-CFLAGS := -std=c++14 -Wall
+CFLAGS := -std=c++23 -Wall
 LDFLAGS := -lSDL2
 
 SRCS := main.cpp world.cpp graphics_handler.cpp preydator_math.cpp neural_network.cpp $(wildcard Entity/*.cpp)

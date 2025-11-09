@@ -27,7 +27,7 @@ public:
     static World* GetInstance();
     std::vector<EntityPtr> getEntities();
 	void initNewGeneration();
-	bool initSavedGeneration(std::vector<std::ifstream>& in_files);
+	bool initSavedGeneration(std::string const& in_file_path);
 	void killGeneration();
 	bool generationAlive();
     void updateAgents();
@@ -42,7 +42,7 @@ private:
 	void initializeBarriers();
     void startAgents();
     void stopAgents();
-    void tick();
+    void tick(int microseconds);
 	void startEntityAgent(EntityPtr entity);
 	bool validMove(EntityPtr entity) const;
 	void updateEntityLocation(EntityPtr entity);
@@ -50,6 +50,7 @@ private:
 	Point getBirthLocation(EntityPtr parent);
 	InputLayerValues generateEntityPerception(EntityPtr entity);
 	void createEntitySaveFile();
+	void createNeuralNetworkGraphs();
 
     static World* m_worldSingletonInstance;
     static std::mutex m_constructorMutex;

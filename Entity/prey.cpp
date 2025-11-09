@@ -11,7 +11,7 @@ void Prey::spawn()
 
 void Prey::action()
 {
-    m_health -= std::rand() % 2;
+    m_health -= (std::rand() % 3) + 1;
 	if(m_health <= 0) m_signal |= 0x1;
 	if (m_allow_location_update)
 	{
@@ -57,9 +57,9 @@ std::shared_ptr<Entity> Prey::giveBirth(Point birthLocation)
 	return std::make_shared<Prey>(m_brain, birthLocation);
 }
 
-void Prey::documentSelf()
+std::string Prey::documentSelf()
 {
-	m_brain.exportGraph("Prey");
+	return m_brain.exportGraph("Prey");
 }
 
 std::string Prey::createSaveString()

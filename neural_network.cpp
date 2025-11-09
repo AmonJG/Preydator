@@ -127,53 +127,45 @@ int NeuralNetwork::getNeuronIdCounter() const
 	return m_neuron_id_counter;
 }
 
-void NeuralNetwork::exportGraph(std::string entity_type)
+std::string NeuralNetwork::exportGraph(std::string entity_type)
 {
-	std::ofstream out_file;
-	std::string timestamp = getCurrentTimestamp();
-	std::string filename = "data/neuralNetworkGraph_" + timestamp + ".dot";
-	out_file.open(filename);
-
-    if (!out_file.is_open())
-	{
-        std::cerr << "Error opening neural network graph export file!" << std::endl;
-    }
-	out_file << "___" << entity_type << "___"  << std::endl;
-	out_file << "digraph {\n\trankdir=LR;\n\tranksep=5.0;\n\tsubgraph {\n\t\trank=same;" << std::endl;
+	std::stringstream exportedGraph;
+	exportedGraph << "___" << entity_type << "___"  << std::endl;
+	exportedGraph << "digraph {\n\trankdir=LR;\n\tranksep=5.0;\n\tsubgraph {\n\t\trank=same;" << std::endl;
 	// write input layer neurons
 	for (auto perception_mapping : perception_mapping_matrix)
 	{
 		Neuron input_neuron = m_input_layer[perception_mapping.node_id];
-		out_file << "\t\t" << input_neuron->id << " [label = \"" <<
+		exportedGraph << "\t\t" << input_neuron->id << " [label = \"" <<
 			perception_mapping.id_name << "\"];" << std::endl;
 	}
-	out_file << "\t}\n\tsubgraph {\n\t\trank=same;" << std::endl;
+	exportedGraph << "\t}\n\tsubgraph {\n\t\trank=same;" << std::endl;
 	// Write output layer neurons
 	// TODO: remove hardcoded labels
 	Neuron output_neuron = m_output_layer[OutputLayerNodeIds::MOVE_X];
-	out_file << "\t\t" << output_neuron->id << " [label = \"MOVE_X\"];" << std::endl;
+	exportedGraph << "\t\t" << output_neuron->id << " [label = \"MOVE_X\"];" << std::endl;
 	output_neuron = m_output_layer[OutputLayerNodeIds::MOVE_Y];
-	out_file << "\t\t" << output_neuron->id << " [label = \"MOVE_Y\"];" << std::endl;
+	exportedGraph << "\t\t" << output_neuron->id << " [label = \"MOVE_Y\"];" << std::endl;
 	// Write hidden layer neurons
 	for (size_t i = 0; i < m_hidden_layers.size(); i++)
 	{
-		out_file << "\t}\n\tsubgraph {\n\t\trank=same;" << std::endl;
+		exportedGraph << "\t}\n\tsubgraph {\n\t\trank=same;" << std::endl;
 		for (auto neuron : m_hidden_layers[i].neurons)
 		{
-			out_file << "\t\t" << neuron->id << " [label = \"HL " <<
+			exportedGraph << "\t\t" << neuron->id << " [label = \"HL " <<
 			i << ": " << neuron->id << "\"];" << std::endl;
 		}
 	}
-	out_file << "\t}" << std::endl;
+	exportedGraph << "\t}" << std::endl;
 	// Write synapses
 	for (auto synapse : m_synapses)
 	{
-		out_file << "\t" << synapse->src_neuron->id << "->" <<
+		exportedGraph << "\t" << synapse->src_neuron->id << "->" <<
 			synapse->dst_neuron->id << " [label = \"" <<
 			synapse->weight << "\"];" << std::endl;
 	}
-	out_file << "}" << std::endl;
-	out_file.close();
+	exportedGraph << "}" << std::endl;
+	return exportedGraph.str();
 }
 
 std::string NeuralNetwork::getSaveString(std::string entity_type)

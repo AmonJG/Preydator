@@ -61,8 +61,9 @@ std::shared_ptr<Entity> Barrier::giveBirth(Point birthLocation)
 	return nullptr;
 }
 
-void Barrier::documentSelf()
+std::string Barrier::documentSelf()
 {
+	return "";
 }
 
 std::string Barrier::createSaveString()
