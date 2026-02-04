@@ -46,17 +46,17 @@ DrawInfo Barrier::getDrawInfo() const
     return barrierDrawInfo;
 }
 
-double Barrier::getPerceptionValue() const
+double Barrier::getPerceptionValue(EntityPtr entity) const
 {
 	return BARRIER_INPUT_LAYER_VALUE;
 }
 
-bool Barrier::attack(std::shared_ptr<Entity> entity)
+bool Barrier::attack(EntityPtr entity)
 {
     return false;
 }
 
-std::shared_ptr<Entity> Barrier::giveBirth(Point birthLocation)
+EntityPtr Barrier::giveBirth(Point birthLocation)
 {
 	return nullptr;
 }

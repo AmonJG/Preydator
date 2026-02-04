@@ -27,7 +27,7 @@ NeuralNetwork::NeuralNetwork()
 	// Initializing synapses for every neuron (two times) WIESO 2x????
 	//init();
 	init();
-	std::cout << "CONTRUCT NN ";
+	//std::cout << "CONSTRUCT NN ";
 	// Mutate new brain as often as configured
 	for (unsigned int i = 0; i < config.init_mutations; i++) mutate();
 }
@@ -87,7 +87,7 @@ NeuralNetwork::NeuralNetwork(const NeuralNetwork& other)
       m_neuron_id_counter(other.m_neuron_id_counter)
 {
 	// Mutate offsping brain as often as configured
-	std::cout << "COPY BRAIN";
+	//std::cout << "COPY BRAIN" << std::endl;
 	for (unsigned int i = 0; i < config.offspring_mutations; i++) mutate();
 }
 
@@ -121,6 +121,14 @@ Point NeuralNetwork::decideMovement(InputLayerValues input_layer_values)
 	
 	desired_movement.x = std::tanh(x_out->value) * 5;
 	desired_movement.y = std::tanh(y_out->value) * 5;
+
+	// Introduce randomness into movement
+	if(std::rand() % 50 == 0)
+	{
+		desired_movement.x = (std::rand() % 11) - 5;
+		desired_movement.y = (std::rand() % 11) - 5;
+	}
+
 	return desired_movement;
 }
 

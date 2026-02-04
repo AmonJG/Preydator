@@ -27,13 +27,15 @@ public:
     void sendSignal(int signal);
     virtual DrawInfo getDrawInfo() const = 0;
     int getId() const;
+    int getFitness() const;
+    int getLifetime() const;
 	NeuralNetworkPtr getBrain() const;
     Point getLocation() const;
     Point getLocationRequest() const;
 	void allowLocationUpdate();
 	virtual std::string documentSelf() = 0;
 	virtual std::string createSaveString() = 0;
-	virtual double getPerceptionValue() const = 0;
+	virtual double getPerceptionValue(std::shared_ptr<Entity> entity) const = 0;
 	virtual bool attack(std::shared_ptr<Entity> entity) = 0;
 	virtual std::shared_ptr<Entity> giveBirth(Point birthLocation) = 0;
 
@@ -45,6 +47,8 @@ protected:
 	Point m_desired_movement;
 	bool m_allow_location_update;
     int m_health;
+	int m_fitness;
+	int m_lifetime;
     unsigned int m_reproduction;
     std::condition_variable* mp_cv;
     std::mutex* mp_mtx;
@@ -53,5 +57,7 @@ protected:
     int m_signal;
 
 };
+
+using EntityPtr = std::shared_ptr<Entity>;
 
 #endif /* PREYDATOR_ENTITY_H__ */

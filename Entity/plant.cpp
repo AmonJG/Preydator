@@ -1,5 +1,5 @@
 #include "plant.h"
-
+#include "prey.h"
 
 
 
@@ -13,9 +13,10 @@ void Plant::spawn()
 
 void Plant::action()
 {
-    m_health -= std::rand() % 3;
+	if(std::rand() % 50 == 0) m_health -= 100;
 	if(m_health <= 0) m_signal |= 0x1;
-    m_reproduction += std::rand() % 10;
+    if(std::rand() % 50 == 0) m_reproduction += 400;
+	m_lifetime++;
 }
 
 void Plant::perceive(InputLayerValues perception)
@@ -27,17 +28,19 @@ DrawInfo Plant::getDrawInfo() const
     return plantDrawInfo;
 }
 
-double Plant::getPerceptionValue() const
+double Plant::getPerceptionValue(EntityPtr entity) const
 {
-	return PLANT_INPUT_LAYER_VALUE;
+	return std::dynamic_pointer_cast<Prey>(entity) ?
+		PLANT_SEEN_BY_PREY_INPUT_LAYER_VALUE :
+		PLANT_SEEN_BY_PREDATOR_INPUT_LAYER_VALUE;
 }
 
-bool Plant::attack(std::shared_ptr<Entity> entity)
+bool Plant::attack(EntityPtr entity)
 {
     return false;
 }
 
-std::shared_ptr<Entity> Plant::giveBirth(Point birthLocation)
+EntityPtr Plant::giveBirth(Point birthLocation)
 {
 	m_reproduction = 0;
 	return std::make_shared<Plant>(birthLocation);

@@ -12,9 +12,9 @@ public:
 	void action() override;
 	void perceive(InputLayerValues perception) override;
 	DrawInfo getDrawInfo() const override;
-	double getPerceptionValue() const override;
-	bool attack(std::shared_ptr<Entity> entity) override;
-	std::shared_ptr<Entity> giveBirth(Point birthLocation) override;
+	double getPerceptionValue(EntityPtr entity) const override;
+	bool attack(EntityPtr entity) override;
+	EntityPtr giveBirth(Point birthLocation) override;
 	std::string documentSelf() override;
 	std::string createSaveString() override;
 

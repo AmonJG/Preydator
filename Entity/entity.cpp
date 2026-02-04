@@ -13,6 +13,8 @@ Entity::Entity()
     m_id = newId();
 	m_allow_location_update = true;
     m_health = config.entity_start_health;
+	m_fitness = 0;
+	m_lifetime = 0;
     m_reproduction = 0;
     m_signal = 0;
 }
@@ -23,6 +25,8 @@ Entity::Entity(NeuralNetworkPtr brain)
     m_id = newId();
 	m_allow_location_update = true;
     m_health = config.entity_start_health;
+	m_fitness = 0;
+	m_lifetime = 0;
     m_reproduction = 0;
     m_signal = 0;
 }
@@ -32,6 +36,8 @@ Entity::Entity(Point location)
     m_id = newId();
 	m_allow_location_update = true;
     m_health = config.entity_start_health;
+	m_fitness = 0;
+	m_lifetime = 0;
     m_reproduction = 0;
     m_signal = 0;
 	m_location.x = location.x;
@@ -46,6 +52,8 @@ Entity::Entity(NeuralNetworkPtr brain, Point location)
     m_id = newId();
 	m_allow_location_update = true;
     m_health = config.entity_start_health;
+	m_fitness = 0;
+	m_lifetime = 0;
     m_reproduction = 0;
     m_signal = 0;
 	m_location.x = location.x;
@@ -94,6 +102,16 @@ void Entity::sendSignal(int signal)
 int Entity::getId() const
 {
     return m_id;
+}
+
+int Entity::getFitness() const
+{
+    return m_fitness;
+}
+
+int Entity::getLifetime() const
+{
+    return m_lifetime;
 }
 
 NeuralNetworkPtr Entity::getBrain() const

@@ -10,13 +10,22 @@
 #include <atomic>
 #include <thread>
 #include <vector>
-#include <stack>
+#include <queue>
 
-using EntityPtr = std::shared_ptr<Entity>;
-
-struct Agent {
+struct Agent
+{
     EntityPtr entity;
     std::thread thread;
+};
+
+struct EntityPtrCompare
+{
+    bool operator()(const EntityPtr& a, const EntityPtr& b) const
+	{
+        if (a->getFitness() != b->getFitness())
+            return a->getFitness() < b->getFitness();
+        return a->getLifetime() < b->getLifetime();
+    }
 };
 
 class World
@@ -58,7 +67,7 @@ private:
     std::vector<EntityPtr> m_entities;
 	std::vector<EntityPtr> m_barriers;
 	std::vector<SDL_Point> m_barrierPoints;
-	std::stack<EntityPtr> m_deadEntities;
+	std::priority_queue<EntityPtr> m_deadEntities;
 	bool m_generationAlive = true;
     std::condition_variable m_cv;
     std::mutex m_mtx;

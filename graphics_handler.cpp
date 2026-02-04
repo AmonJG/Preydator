@@ -20,14 +20,16 @@ GraphicsHandler* GraphicsHandler::GetInstance(int w, int h)
 GraphicsHandler::GraphicsHandler(int w, int h)
 {
     // Initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO) != 0)
+	{
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
         exit(EXIT_FAILURE);
     }
 
     // Create a window
     m_window = SDL_CreateWindow("Graphical Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, 0);
-    if (!m_window) {
+    if (!m_window)
+	{
         SDL_Log("Failed to create window: %s", SDL_GetError());
         SDL_Quit();
         exit(EXIT_FAILURE);
@@ -35,7 +37,8 @@ GraphicsHandler::GraphicsHandler(int w, int h)
 
     // Create a renderer
     m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_ACCELERATED);
-    if (!m_renderer) {
+    if (!m_renderer)
+	{
         SDL_Log("Failed to create renderer: %s", SDL_GetError());
         SDL_DestroyWindow(m_window);
         SDL_Quit();

@@ -11,7 +11,7 @@ void Predator::spawn()
 
 void Predator::action()
 {
-    m_health -= (std::rand() % 3) + 2;
+    if(std::rand() % 50 == 0) m_health -= 75;
 	if(m_health <= 0) m_signal |= 0x1;
 	if (m_allow_location_update)
 	{
@@ -21,6 +21,7 @@ void Predator::action()
 	m_location_request.x = m_location.x + m_desired_movement.x;
 	m_location_request.y = m_location.y + m_desired_movement.y;
 	m_allow_location_update = false;
+	m_lifetime++;
 }
 
 void Predator::perceive(InputLayerValues perception)
@@ -33,12 +34,14 @@ DrawInfo Predator::getDrawInfo() const
     return predatorDrawInfo;
 }
 
-double Predator::getPerceptionValue() const
+double Predator::getPerceptionValue(EntityPtr entity) const
 {
-	return PREDATOR_INPUT_LAYER_VALUE;
+	return std::dynamic_pointer_cast<Prey>(entity) ?
+	PREDATOR_SEEN_BY_PREY_INPUT_LAYER_VALUE :
+	PREDATOR_SEEN_BY_PREDATOR_INPUT_LAYER_VALUE;
 }
 
-bool Predator::attack(std::shared_ptr<Entity> entity)
+bool Predator::attack(EntityPtr entity)
 {
 	std::shared_ptr<Prey> prey = std::dynamic_pointer_cast<Prey>(entity);
 	if (prey && !(prey->check() & 0x1))
@@ -51,10 +54,11 @@ bool Predator::attack(std::shared_ptr<Entity> entity)
     return false;
 }
 
-std::shared_ptr<Entity> Predator::giveBirth(Point birthLocation)
+EntityPtr Predator::giveBirth(Point birthLocation)
 {
 	m_reproduction = 0;
-	return std::make_shared<Predator>(m_brain, birthLocation);
+	m_fitness++;
+	return std::make_shared<Predator>(std::make_shared<NeuralNetwork>(*m_brain), birthLocation);
 }
 
 std::string Predator::documentSelf()

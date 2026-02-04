@@ -173,8 +173,10 @@ void World::killGeneration()
 	m_entities.clear();
 	m_barriers.clear();
 
-	for (int i = 0; i < WORLD_X; ++i) {
-        for (int j = 0; j < WORLD_Y; ++j) {
+	for (int i = 0; i < WORLD_X; ++i)
+	{
+        for (int j = 0; j < WORLD_Y; ++j)
+		{
             occupiedSpace[i][j] = nullptr;
         }
     }
@@ -245,7 +247,15 @@ void World::updateAgents()
 			m_deadEntities.push((**agent).entity);
 		}
         //logFile << "join: " << (**agent).entity->getId() << std::endl;
-        (**agent).thread.join();
+		if((**agent).thread.joinable())
+		{
+			(**agent).thread.join();
+		}
+		else
+		{
+			logFile << "ERROR: Entity thread with ID=" << (**agent).entity->getId() << " not joinable!" << std::endl;
+			std::cout << "ERROR: Entity thread with ID=" << (**agent).entity->getId() << " not joinable!" << std::endl;
+		}
         //logFile << "agents size: " << m_agents.size() << std::endl;
         //logFile << "erase: " << (**agent).entity->getId() << std::endl;
 		m_agents.erase(*agent);
@@ -336,6 +346,7 @@ void World::stopAgents()
 	//m_agents.back().entity->documentSelf();
 	createNeuralNetworkGraphs();
     tick(1000);
+	m_cv.notify_all();
 	std::cout << std::endl;
     for(auto& agent : m_agents)
     {
@@ -421,16 +432,19 @@ void World::selectBestBrains(std::vector<NeuralNetworkPtr>& preyBrains, std::vec
 			while (predatorAmount-- > 0) predatorBrains.emplace_back(std::make_shared<NeuralNetwork>());
 			return;
 		}
+		// Every top brain produces two offsprings in next generation
 		EntityPtr deadEntity = m_deadEntities.top();
 		if (preyAmount > 0 && std::dynamic_pointer_cast<Prey>(deadEntity))
 		{
 			preyBrains.push_back(deadEntity->getBrain());
-			preyAmount--;
+			preyBrains.push_back(deadEntity->getBrain());
+			preyAmount-=2;
 		}
 		else if (predatorAmount > 0 && std::dynamic_pointer_cast<Predator>(deadEntity))
 		{
 			predatorBrains.push_back(deadEntity->getBrain());
-			predatorAmount--;
+			predatorBrains.push_back(deadEntity->getBrain());
+			predatorAmount-=2;
 		}
 		m_deadEntities.pop();
 	}
@@ -475,6 +489,7 @@ Point World::getBirthLocation(EntityPtr parent)
 
 InputLayerValues World::generateEntityPerception(EntityPtr entity)
 {
+	if(std::dynamic_pointer_cast<Plant>(entity)) return InputLayerValues{};
 	InputLayerValues input_layer_values;
 	Point entityLocation = entity->getLocation();
 	for (auto perception_mapping : perception_mapping_matrix)
@@ -486,7 +501,7 @@ InputLayerValues World::generateEntityPerception(EntityPtr entity)
 			EntityPtr occupyingEntity = occupiedSpace[x][y];
 			if(occupyingEntity)
 			{
-				input_layer_values.push_back({perception_mapping.node_id, occupyingEntity->getPerceptionValue()});
+				input_layer_values.push_back({perception_mapping.node_id, occupyingEntity->getPerceptionValue(entity)});
 				//std::cout << input_layer_values.back().id << " " << input_layer_values.back().value << std::endl;
 			}
 			else
