@@ -18,6 +18,8 @@ struct Agent
     std::thread thread;
 };
 
+using AgentPtr = std::shared_ptr<Agent>;
+
 struct EntityPtrCompare
 {
     bool operator()(const EntityPtr& a, const EntityPtr& b) const
@@ -71,7 +73,7 @@ private:
 	bool m_generationAlive = true;
     std::condition_variable m_cv;
     std::mutex m_mtx;
-    std::vector<Agent> m_agents;
+    std::vector<AgentPtr> m_agents;
     std::atomic<int> m_stopFlag;
     bool m_haltAgents = true;
     bool m_haltAgents2 = true;

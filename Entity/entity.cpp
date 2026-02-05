@@ -65,15 +65,26 @@ Entity::Entity(NeuralNetworkPtr brain, Point location)
 void Entity::run(std::atomic<int>& stopFlag)
 {
     //printf("%d started!\n", m_id);
-    while(stopFlag.load(std::memory_order_relaxed) >= 0 && m_signal == 0)
+    while(stopFlag.load(std::memory_order_acquire) >= 0 && m_signal == 0)
     {
-        std::unique_lock<std::mutex> lk(*mp_mtx);
-		//printf("%d start tick!\n", m_id);
-		mp_cv->wait(lk, [&]{ return !*mp_haltAgents; });
+		{
+            std::unique_lock<std::mutex> lk(*mp_mtx);
+			//printf("%d WAIT for next tick!\n", m_id);
+            mp_cv->wait(lk, [&]{
+				return stopFlag < 0 || m_signal != 0 || !*mp_haltAgents;
+			});
+			//printf("%d start tick!\n", m_id);
+        }
 		action();
 		//printf("%d action done!\n", m_id);
-		mp_cv->wait(lk, [&]{ return !*mp_haltAgents2; });
-		//printf("%d loop done!\n", m_id);
+		{
+            std::unique_lock<std::mutex> lk(*mp_mtx);
+			//printf("%d WAIT for everyone!\n", m_id);
+            mp_cv->wait(lk, [&]{
+				return stopFlag < 0 || m_signal != 0 || !*mp_haltAgents2;
+			});
+        }
+		//printf("%d tick done!\n", m_id);
     }
     //printf("%d terminated!\n", m_id);
 }
