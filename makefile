@@ -2,7 +2,7 @@ CC := g++
 CFLAGS := -std=c++23 -Wall
 LDFLAGS := -lSDL2
 
-SRCS := main.cpp world.cpp graphics_handler.cpp preydator_math.cpp neural_network.cpp $(wildcard Entity/*.cpp)
+SRCS := main.cpp world.cpp graphics_handler.cpp preydator_math.cpp neural_network.cpp thread_pool.cpp $(wildcard Entity/*.cpp)
 OBJS := $(SRCS:.cpp=.o)
 DEPS := $(SRCS:.cpp=.d)
 

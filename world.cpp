@@ -41,6 +41,7 @@ World* World::GetInstance()
 }
 
 World::World()
+	: m_pool(std::thread::hardware_concurrency())
 {
 	if (config.show_animation)
 	{
@@ -192,89 +193,81 @@ bool World::generationAlive()
 void World::updateAgents()
 {
     std::vector<AgentPtr> agentsToTerminate;
-	std::vector<EntityPtr> entitiesToStart;
-	int plantPopulation = 0;
-	int preyPopulation = 0;
-	int predatorPopulation = 0;
-    for(auto agent : m_agents)
+    std::vector<EntityPtr> entitiesToStart;
+
+    int plantPopulation = 0;
+    int preyPopulation = 0;
+    int predatorPopulation = 0;
+
+    for (auto& agent : m_agents)
     {
-		if(std::dynamic_pointer_cast<Plant>(agent->entity))plantPopulation++;
-		if(std::dynamic_pointer_cast<Prey>(agent->entity))preyPopulation++;
-		if(std::dynamic_pointer_cast<Predator>(agent->entity))predatorPopulation++;
-		// If entity executes a valid move
-		if(validMove(agent->entity))
-		{
+        auto& entity = agent->entity;
+
+        if (std::dynamic_pointer_cast<Plant>(entity)) plantPopulation++;
+        if (std::dynamic_pointer_cast<Prey>(entity)) preyPopulation++;
+        if (std::dynamic_pointer_cast<Predator>(entity)) predatorPopulation++;
+
+        // If entity executes a valid move
+        if (validMove(entity))
+        {
 			// Allow location update
-			agent->entity->allowLocationUpdate();
-			updateEntityLocation(agent->entity);
-		}
-		// If entity can reproduce
-		if(agent->entity->check() & 0x2)
-		{
-			Point birthLocation = getBirthLocation(agent->entity);
-			if (birthLocation.x >= 0 && birthLocation.y >= 0)
-			{
-				entitiesToStart.push_back(agent->entity->giveBirth(birthLocation));
-				//logFile << "Entity " << agent->entity->getId() << " produced offspring entity "
-				//	<< entitiesToStart.back()->getId() << std::endl;
-			}
-		}
-		// If entity has no healt
-		if(agent->entity->check() & 0x1)
-		{
-			// kill entity
-			agent->entity->sendSignal(1);
-			//TODO: can a thread even be joinable right after the signal without a tick?
-			//std::this_thread::sleep_for(std::chrono::microseconds(1000));
-			if(agent->thread.joinable())
-			{
-				agentsToTerminate.push_back(agent);
-			}
-			continue;
-		}
-		//Send perception data to brain (input layer of neural network)
-		agent->entity->perceive(generateEntityPerception(agent->entity));
+            entity->allowLocationUpdate();
+            updateEntityLocation(entity);
+        }
+        // If entity can reproduce
+        if (entity->check() & 0x2)
+        {
+            Point birthLocation = getBirthLocation(entity);
+            if (birthLocation.x >= 0 && birthLocation.y >= 0)
+            {
+                entitiesToStart.push_back(
+                    entity->giveBirth(birthLocation)
+                );
+            }
+        }
+        // If entity has no healt
+        if (entity->check() & 0x1)
+        {
+			// Kill entity
+            entity->sendSignal(1);
+            agentsToTerminate.push_back(agent);
+            continue;
+        }
+        // Send perception data to brain (input layer of neural network)
+        entity->perceive(generateEntityPerception(entity));
     }
-	populationDataFile << tickCounter << "," << predatorPopulation << "," << preyPopulation << "," << plantPopulation << std::endl;
-	if (predatorPopulation == 0 || preyPopulation == 0) m_generationAlive = false;
+
+    populationDataFile << tickCounter << "," << predatorPopulation << ","
+        << preyPopulation << "," << plantPopulation << std::endl;
+
+    if (predatorPopulation == 0 || preyPopulation == 0)
+        m_generationAlive = false;
+
 	// Execute one World tick
     tick(config.tick_delay);
-	if (tickCounter >= config.max_ticks_per_generation) m_generationAlive = false;
-	// Kill and remove all joinable Agents and their threads from last tick
-	std::lock_guard<std::mutex> lk(m_mtx);
-    for(auto agent : agentsToTerminate)
+
+    if (tickCounter >= config.max_ticks_per_generation)
+        m_generationAlive = false;
+
+    // Remove dead Agents
+    for (auto& agent : agentsToTerminate)
     {
-		if (!std::dynamic_pointer_cast<Plant>(agent->entity))
-		{
-			m_deadEntities.push(agent->entity);
-		}
-        //logFile << "join: " << agent->entity->getId() << std::endl;
-		if(agent->thread.joinable())
-		{
-			agent->thread.join();
-		}
-		else
-		{
-			logFile << "ERROR: Entity thread with ID=" << agent->entity->getId() << " not joinable!" << std::endl;
-			std::cout << "ERROR: Entity thread with ID=" << agent->entity->getId() << " not joinable!" << std::endl;
-		}
-        //logFile << "agents size: " << m_agents.size() << std::endl;
-        //logFile << "erase: " << agent->entity->getId() << std::endl;
-//std::lock_guard<std::mutex> lk(m_mtx);
-		m_agents.erase(
-			std::remove(m_agents.begin(), m_agents.end(), agent),
-			m_agents.end()
-		);
-        //logFile << "agents size: " << m_agents.size() << std::endl;
+        if (!std::dynamic_pointer_cast<Plant>(agent->entity))
+        {
+            m_deadEntities.push(agent->entity);
+        }
+        m_agents.erase(
+            std::remove(m_agents.begin(), m_agents.end(), agent),
+            m_agents.end()
+        );
     }
-	// Start new agents that have been born
-	for(auto entity : entitiesToStart)
-	{
-//std::lock_guard<std::mutex> lk(m_mtx);
-		m_entities.push_back(entity);
-		startEntityAgent(entity);
-		//logFile << "Started newborn entity: " << entity->getId() << std::endl;
-	}
+
+    // Start Newborns
+    for (auto& entity : entitiesToStart)
+    {
+        m_entities.push_back(entity);
+        startEntityAgent(entity);
+    }
 }
 
 void World::drawEntities()
@@ -332,85 +325,54 @@ void World::initializeBarriers()
 
 void World::startAgents()
 {
-    m_stopFlag.store(0, std::memory_order_acquire);
-    std::lock_guard<std::mutex> lk(m_mtx);
-    for(auto& entity : m_entities)
-    {
+    m_stopFlag.store(0, std::memory_order_release);
+	for(auto& entity : m_entities)
+	{
 		entity->spawn();
 		startEntityAgent(entity);
-    }
-    m_cv.notify_all();
+	}
 	logFile << "[INFO] All " << m_agents.size()
 		<< " agents have been started for current generation." << std::endl;
 }
 
 void World::stopAgents()
 {
-    m_stopFlag.store(-1, std::memory_order_acquire);
-	createEntitySaveFile();
-	// document one entity for testing
-	//m_agents.back().entity->documentSelf();
-	createNeuralNetworkGraphs();
-    tick(1000);
+    m_stopFlag.store(-1, std::memory_order_release);
+	if (generationCounter % 50 == 0)
 	{
-		std::lock_guard<std::mutex> lk(m_mtx);
-		m_haltAgents = false;
-		m_haltAgents2 = false;
+		createEntitySaveFile();
+		createNeuralNetworkGraphs();
 	}
-	m_cv.notify_all();
-	std::this_thread::sleep_for(std::chrono::microseconds(10000));
-	std::cout << std::endl;
-    for(auto& agent : m_agents)
-    {
-		//std::cout << "Join agent: " << agent->entity->getId() << std::endl;
-		if(agent->thread.joinable())
-		{
-			agent->thread.join();
-		}
-		else
-		{
-			logFile << "ERROR: In stopAgents: Entity thread with ID=" << agent->entity->getId() << " not joinable!" << std::endl;
-			std::cout << "ERROR: In stopAgents: Entity thread with ID=" << agent->entity->getId() << " not joinable!" << std::endl;
-		}
-    }
-	{
-		std::lock_guard<std::mutex> lk(m_mtx);
-		m_haltAgents = true;
-		m_haltAgents2 = false;
-	}
+    std::cout << std::endl;
 	logFile << "[INFO] All " << m_agents.size()
 		<< " agents have been stopped for current generation." << std::endl;
 }
 
 void World::tick(int microseconds)
 {
-	std::cout << "\rTick: " << tickCounter++ << "/" << config.max_ticks_per_generation << std::flush;
+	std::cout << "\rTick: " << ++tickCounter << "/" << config.max_ticks_per_generation << std::flush;
+
+    for (auto& agent : m_agents)
 	{
-		std::lock_guard<std::mutex> lk(m_mtx);
-		m_haltAgents2 = true;
-		m_haltAgents = false;
-	}
-	m_cv.notify_all();
-    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
-    {
-		std::lock_guard<std::mutex> lk(m_mtx);
-		m_haltAgents = true;
-		m_haltAgents2 = false;
-	}
-	m_cv.notify_all();
-    std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
+        m_pool.enqueue([entity = agent->entity, &stop = m_stopFlag] {
+            if (stop.load(std::memory_order_acquire) >= 0) entity->tick();
+        });
+    }
+    m_pool.wait();
+	std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
 }
 
 void World::startEntityAgent(EntityPtr entity)
 {
-	if(!entity) return;
-	entity->setSharedData(&m_cv, &m_mtx, &m_haltAgents, &m_haltAgents2);
-	Point loc = entity->getLocation();
-	for(auto point : entity->getDrawInfo().points)
-	{
-		occupiedSpace[loc.x + point.x][loc.y + point.y] = entity;
-	}
-	m_agents.push_back(std::make_shared<Agent>(entity, std::thread(&Entity::run, entity, std::ref(m_stopFlag))));
+    if (!entity) return;
+
+    Point loc = entity->getLocation();
+    for (auto point : entity->getDrawInfo().points)
+    {
+        occupiedSpace[loc.x + point.x][loc.y + point.y] = entity;
+    }
+
+    m_agents.push_back(std::make_shared<Agent>(Agent{entity}));
 }
 
 bool World::validMove(EntityPtr entity) const

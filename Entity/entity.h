@@ -18,13 +18,12 @@ public:
     Entity(NeuralNetworkPtr brain, Point location);
     virtual ~Entity() = default;
 	virtual void spawn() = 0;
-    void run(std::atomic<int>& stopFlag);
+    void tick();
     void stop();
 	virtual void action() = 0;
 	virtual void perceive(InputLayerValues perception) = 0;
     int check();
-    void setSharedData(std::condition_variable* cv, std::mutex* mtx, bool* h1, bool* h2);
-    void sendSignal(int signal);
+	void sendSignal(int signal);
     virtual DrawInfo getDrawInfo() const = 0;
     int getId() const;
     int getFitness() const;
@@ -50,10 +49,6 @@ protected:
 	int m_fitness;
 	int m_lifetime;
     unsigned int m_reproduction;
-    std::condition_variable* mp_cv;
-    std::mutex* mp_mtx;
-    bool* mp_haltAgents;
-    bool* mp_haltAgents2;
     int m_signal;
 
 };

@@ -5,17 +5,16 @@
 #include "Entity/entity.h"
 #include "Entity/barrier.h"
 #include "graphics_handler.h"
+#include "thread_pool.h"
 #include <condition_variable>
 #include <mutex>
 #include <atomic>
-#include <thread>
 #include <vector>
 #include <queue>
 
 struct Agent
 {
     EntityPtr entity;
-    std::thread thread;
 };
 
 using AgentPtr = std::shared_ptr<Agent>;
@@ -66,6 +65,7 @@ private:
     static World* m_worldSingletonInstance;
     static std::mutex m_constructorMutex;
     GraphicsHandler* m_graphicsHandler;
+    ThreadPool m_pool;
     std::vector<EntityPtr> m_entities;
 	std::vector<EntityPtr> m_barriers;
 	std::vector<SDL_Point> m_barrierPoints;
@@ -74,7 +74,7 @@ private:
     std::condition_variable m_cv;
     std::mutex m_mtx;
     std::vector<AgentPtr> m_agents;
-    std::atomic<int> m_stopFlag;
+    std::atomic<int> m_stopFlag{0};
     bool m_haltAgents = true;
     bool m_haltAgents2 = true;
 };

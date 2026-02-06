@@ -62,31 +62,10 @@ Entity::Entity(NeuralNetworkPtr brain, Point location)
 	m_location_request.y = m_location.y;
 }
 
-void Entity::run(std::atomic<int>& stopFlag)
+void Entity::tick()
 {
-    //printf("%d started!\n", m_id);
-    while(stopFlag.load(std::memory_order_acquire) >= 0 && m_signal == 0)
-    {
-		{
-            std::unique_lock<std::mutex> lk(*mp_mtx);
-			//printf("%d WAIT for next tick!\n", m_id);
-            mp_cv->wait(lk, [&]{
-				return stopFlag < 0 || m_signal != 0 || !*mp_haltAgents;
-			});
-			//printf("%d start tick!\n", m_id);
-        }
-		action();
-		//printf("%d action done!\n", m_id);
-		{
-            std::unique_lock<std::mutex> lk(*mp_mtx);
-			//printf("%d WAIT for everyone!\n", m_id);
-            mp_cv->wait(lk, [&]{
-				return stopFlag < 0 || m_signal != 0 || !*mp_haltAgents2;
-			});
-        }
-		//printf("%d tick done!\n", m_id);
-    }
-    //printf("%d terminated!\n", m_id);
+    if (m_signal != 0) return;
+    action();
 }
 
 int Entity::check()
@@ -95,14 +74,6 @@ int Entity::check()
     if(m_health <= 0) flags |= 0x1;
     if(m_reproduction >= config.entity_reproduction_goal) flags |= 0x2;
     return flags |= m_signal;
-}
-
-void Entity::setSharedData(std::condition_variable* cv, std::mutex* mtx, bool* h1, bool* h2)
-{
-    mp_cv = cv;
-    mp_mtx = mtx;
-    mp_haltAgents = h1;
-    mp_haltAgents2 = h2;
 }
 
 void Entity::sendSignal(int signal)
