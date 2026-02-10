@@ -11,13 +11,20 @@ void Prey::spawn()
 
 void Prey::action()
 {
-	if(std::rand() % 50 == 0) m_health -= 50;
+	m_health -= calculateMovementBasedHealthReduction();
 	if(m_health <= 0) m_signal |= 0x1;
+	// Only if move is allowed (because it got updated by world in the
+	// beginning of the tick cycle), location gets updated by the last
+	// valid location request and previouse location gets saved.
 	if (m_allow_location_update)
 	{
+		m_previous_location.x = m_location.x;
+		m_previous_location.y = m_location.y;
 		m_location.x = m_location_request.x;
 		m_location.y = m_location_request.y;
 	}
+	// New desired movement is already known at this point and is checked
+	// for validity in the beginning of the new tick cycle.
 	m_location_request.x = m_location.x + m_desired_movement.x;
 	m_location_request.y = m_location.y + m_desired_movement.y;
 	m_allow_location_update = false;
@@ -26,7 +33,7 @@ void Prey::action()
 
 void Prey::perceive(InputLayerValues perception)
 {
-	m_desired_movement = m_brain->decideMovement(perception);
+	m_desired_movement = m_brain->decideMovement(perception, {m_previous_location, m_location, m_health});
 }
 
 DrawInfo Prey::getDrawInfo() const

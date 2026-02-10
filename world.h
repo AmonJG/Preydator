@@ -61,6 +61,7 @@ private:
 	InputLayerValues generateEntityPerception(EntityPtr entity);
 	void createEntitySaveFile();
 	void createNeuralNetworkGraphs();
+	void createPopulationDataFile();
 
     static World* m_worldSingletonInstance;
     static std::mutex m_constructorMutex;

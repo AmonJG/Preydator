@@ -17,6 +17,7 @@ public:
 	~ThreadPool();
 	void enqueue(std::function<void()> job);
 	void wait();
+	void clear();
 
 private:
 	void workerLoop();

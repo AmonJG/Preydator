@@ -1,6 +1,7 @@
 #ifndef PREYDATOR_ENTITY_H__
 #define PREYDATOR_ENTITY_H__
 
+#include "../preydator_math.h"
 #include "../preydator_config.h"
 #include "../neural_network.h"
 #include <cstdint>
@@ -29,6 +30,7 @@ public:
     int getFitness() const;
     int getLifetime() const;
 	NeuralNetworkPtr getBrain() const;
+    Point getPreviousLocation() const;
     Point getLocation() const;
     Point getLocationRequest() const;
 	void allowLocationUpdate();
@@ -39,8 +41,11 @@ public:
 	virtual std::shared_ptr<Entity> giveBirth(Point birthLocation) = 0;
 
 protected:
+	int calculateMovementBasedHealthReduction();
+
     int m_id;
 	NeuralNetworkPtr m_brain;
+    Point m_previous_location;
     Point m_location;
 	Point m_location_request;
 	Point m_desired_movement;

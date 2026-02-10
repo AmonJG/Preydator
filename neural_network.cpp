@@ -8,7 +8,7 @@ NeuralNetwork::NeuralNetwork()
 {
 	createInputAndOutputLayer();
 
-	// Create two hidden layers with neurons
+	// Create hidden layers with neurons
 	for (unsigned int layerIndex = 0; layerIndex < config.init_hidden_layers; layerIndex++)
 	{
 		Layer hidden_layer;
@@ -23,10 +23,8 @@ NeuralNetwork::NeuralNetwork()
 		m_hidden_layers.push_back(hidden_layer);
 	}
 
-	// Create random brain
-	// Initializing synapses for every neuron (two times) WIESO 2x????
-	//init();
-	init();
+	// Create new fully connected brain with random weights
+	initNewBrain();
 	//std::cout << "CONSTRUCT NN ";
 	// Mutate new brain as often as configured
 	for (unsigned int i = 0; i < config.init_mutations; i++) mutate();
@@ -96,9 +94,17 @@ NeuralNetwork::~NeuralNetwork()
 
 }
 
-Point NeuralNetwork::decideMovement(InputLayerValues input_layer_values)
+Point NeuralNetwork::decideMovement(InputLayerValues perception_values, EntityInputStats entity_input_stats)
 {
 	Point desired_movement;
+	InputLayerValues input_layer_values = perception_values;
+	input_layer_values.push_back({InputLayerNodeIds::NOISE, gaussianNoise(0.0, 0.02)});
+	double health_input = static_cast<double>(entity_input_stats.health) / config.entity_start_health;
+	input_layer_values.push_back({InputLayerNodeIds::HEALTH, health_input});
+	double last_step_x = StepDistanceToInputValue(entity_input_stats.location.x - entity_input_stats.previous_location.x);
+	input_layer_values.push_back({InputLayerNodeIds::LAST_STEP_X, last_step_x});
+	double last_step_y = StepDistanceToInputValue(entity_input_stats.location.y - entity_input_stats.previous_location.y);
+	input_layer_values.push_back({InputLayerNodeIds::LAST_STEP_Y, last_step_y});
 	// Set input layer according to agents perception
 	setInputLayer(input_layer_values);
 
@@ -117,17 +123,9 @@ Point NeuralNetwork::decideMovement(InputLayerValues input_layer_values)
 	Neuron y_out = m_output_layer[OutputLayerNodeIds::MOVE_Y];
 	calculateNeuronValue(y_out);
 
-	// Normalize and assign output values (range = [-5,5])
-	
-	desired_movement.x = std::tanh(x_out->value) * 5;
-	desired_movement.y = std::tanh(y_out->value) * 5;
-
-	// Introduce randomness into movement
-	if(std::rand() % 50 == 0)
-	{
-		desired_movement.x = (std::rand() % 11) - 5;
-		desired_movement.y = (std::rand() % 11) - 5;
-	}
+	// Normalize and assign output values (range = [ -max_step_size, max_step_size ])
+	desired_movement.x = outputValueToStepSize(x_out->value);
+	desired_movement.y = outputValueToStepSize(y_out->value);
 
 	return desired_movement;
 }
@@ -143,6 +141,12 @@ std::string NeuralNetwork::exportGraph(std::string entity_type)
 	exportedGraph << "___" << entity_type << "___"  << std::endl;
 	exportedGraph << "digraph {\n\trankdir=LR;\n\tranksep=5.0;\n\tsubgraph {\n\t\trank=same;" << std::endl;
 	// write input layer neurons
+	for (auto input_mapping : input_mapping_matrix)
+	{
+		Neuron input_neuron = m_input_layer[input_mapping.node_id];
+		exportedGraph << "\t\t" << input_neuron->id << " [label = \"" <<
+			input_mapping.id_name << "\"];" << std::endl;
+	}
 	for (auto perception_mapping : perception_mapping_matrix)
 	{
 		Neuron input_neuron = m_input_layer[perception_mapping.node_id];
@@ -198,6 +202,15 @@ std::string NeuralNetwork::getSaveString(std::string entity_type)
 void NeuralNetwork::createInputAndOutputLayer()
 {
 	// Create input layer neurons
+	for (auto input_mapping : input_mapping_matrix)
+	{
+		Neuron neuron = std::make_shared<Node>();
+		m_neurons.push_back(neuron);
+		neuron->id = m_neuron_id_counter++;
+		neuron->value = INVALID_INPUT_LAYER_VALUE;
+		m_input_layer[input_mapping.node_id] = neuron;
+	}
+	// Create input layer perception neurons
 	for (auto perception_mapping : perception_mapping_matrix)
 	{
 		Neuron neuron = std::make_shared<Node>();
@@ -206,6 +219,7 @@ void NeuralNetwork::createInputAndOutputLayer()
 		neuron->value = INVALID_INPUT_LAYER_VALUE;
 		m_input_layer[perception_mapping.node_id] = neuron;
 	}
+
 
 	// Create output layer neurons
 	// TODO put all in two lines
@@ -242,12 +256,13 @@ void NeuralNetwork::calculateNeuronValue(Neuron neuron)
 		neuron->value += edge->weight * edge->src_neuron->value;
 	}
 }
-
+/*
 Neuron NeuralNetwork::getRandInputLayerNeuron()
 {
 	int neuronIndex = std::rand() % perception_mapping_matrix.size();
 	return m_input_layer[perception_mapping_matrix[neuronIndex].node_id];
 }
+*/
 
 Neuron NeuralNetwork::getRandHiddenLayerNeuron(size_t hiddenLayerIndex)
 {
@@ -282,44 +297,91 @@ Neuron NeuralNetwork::getRandNeuronFromFollowingLayers(size_t startLayerIndex)
 	return neuron;
 }
 
-void NeuralNetwork::init()
+void NeuralNetwork::initNewBrain()
 {
-	for (auto perception_mapping : perception_mapping_matrix)
+	// Connect input layer to first hidden layer
+	for (auto neuron : m_hidden_layers[0].neurons)
 	{
-		Synapse synapse = std::make_shared<Edge>();
-		m_synapses.push_back(synapse);
-		synapse->weight = generateRandomDouble(-1, 1);
-		synapse->src_neuron = m_input_layer[perception_mapping.node_id];
-		synapse->dst_neuron = getRandNeuronFromFollowingLayers(0);
-		// TODO: check ob das wirklich so rekursiv geht
-		synapse->dst_neuron->incoming_edges.push_back(synapse);
-	}
-	for (size_t i = 0; i < m_hidden_layers.size(); i++)
-	{
-		for (auto neuron : m_hidden_layers[i].neurons)
+		for (auto input_mapping : input_mapping_matrix)
 		{
 			Synapse synapse = std::make_shared<Edge>();
 			m_synapses.push_back(synapse);
 			synapse->weight = generateRandomDouble(-1, 1);
-			synapse->src_neuron = neuron;
-			synapse->dst_neuron = getRandNeuronFromFollowingLayers(i+1);
-			// TODO: check ob das wirklich so rekursiv geht
+			synapse->src_neuron = m_input_layer[input_mapping.node_id];
+			synapse->dst_neuron = neuron;
 			synapse->dst_neuron->incoming_edges.push_back(synapse);
 		}
+
+		for (auto perception_mapping : perception_mapping_matrix)
+		{
+			Synapse synapse = std::make_shared<Edge>();
+			m_synapses.push_back(synapse);
+			synapse->weight = generateRandomDouble(-1, 1);
+			synapse->src_neuron = m_input_layer[perception_mapping.node_id];
+			synapse->dst_neuron = neuron;
+			synapse->dst_neuron->incoming_edges.push_back(synapse);
+		}
+	}
+
+	// Connect hidden layers to following hidden layers
+	for (size_t i = 1; i < m_hidden_layers.size(); i++)
+	{
+		for (auto next_neuron : m_hidden_layers[i].neurons)
+		{
+			for (auto prev_neuron : m_hidden_layers[i-1].neurons)
+			{
+				Synapse synapse = std::make_shared<Edge>();
+				m_synapses.push_back(synapse);
+				synapse->weight = generateRandomDouble(-1, 1);
+				synapse->src_neuron = prev_neuron;
+				synapse->dst_neuron = next_neuron;
+				synapse->dst_neuron->incoming_edges.push_back(synapse);
+			}
+		}
+	}
+
+	// Connect last hidden layer to ouptut layer
+	for (auto neuron : m_hidden_layers[m_hidden_layers.size() - 1].neurons)
+	{
+		Synapse synapse = std::make_shared<Edge>();
+		m_synapses.push_back(synapse);
+		synapse->weight = generateRandomDouble(-1, 1);
+		synapse->src_neuron = neuron;
+		synapse->dst_neuron = m_output_layer[OutputLayerNodeIds::MOVE_X];
+		synapse->dst_neuron->incoming_edges.push_back(synapse);
+		synapse = std::make_shared<Edge>();
+		m_synapses.push_back(synapse);
+		synapse->weight = generateRandomDouble(-1, 1);
+		synapse->src_neuron = neuron;
+		synapse->dst_neuron = m_output_layer[OutputLayerNodeIds::MOVE_Y];
+		synapse->dst_neuron->incoming_edges.push_back(synapse);
 	}
 }
 
 void NeuralNetwork::mutate()
 {
-	int numberOfEdgesToMutate = randWithExponentialBias(1, m_synapses.size());
-	auto edgesToMutate = generateUniqueRandInts(numberOfEdgesToMutate, m_synapses.size());
-	for (auto edgeIndex : edgesToMutate)
+	for (auto synapse : m_synapses)
 	{
-		// max change in weight: +/-2.5%
-		double changeFactor = m_synapses[edgeIndex]->weight / 40;
-		m_synapses[edgeIndex]->weight += generateRandomDouble(-changeFactor, changeFactor);
+		if (trueWithProb(0.15))
+		{
+			synapse->weight += generateRandomDouble(-0.1, 0.1);
+		}
 	}
-	int r = std::rand() % 100;
+/*
+
+
+PLAN:
+
+Hidden layers: 1
+Hidden neurons: 16–32
+Weight mutation per connection: 10–20% chance, small change ±0.1–0.2
+Add edge: 5–10% per genome
+Remove edge: 1–5% per genome
+Add node: 1–3% per genome
+Remove node: 0.5–2% per genome
+Skip connections: 5–10% chance
+
+
 	// 10% New Neuron with two synapses
 	if (r % 10 == 0)
 	{
@@ -419,6 +481,6 @@ void NeuralNetwork::mutate()
 		}
 		m_synapses.erase(m_synapses.begin() + synapseIndex);
 	}
-
+*/
 	// 1%   -> in new Hidden Layer
 }

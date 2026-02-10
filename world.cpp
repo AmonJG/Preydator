@@ -53,20 +53,13 @@ World::World()
 	std::filesystem::create_directory(dataPath);
 	dataPath += "/";
 
-    std::string filename = dataPath + "populationData_" + timestamp + ".csv";
-    populationDataFile.open(filename);
-	filename = dataPath + "preydator_" + timestamp + ".log";
+	std::string filename = dataPath + "preydator_" + timestamp + ".log";
 	logFile.open(filename);
 
-    if (!populationDataFile.is_open())
-	{
-        std::cerr << "Error opening population data file!" << std::endl;
-    }
 	if (!logFile.is_open())
 	{
         std::cerr << "Error opening log file!" << std::endl;
     }
-	populationDataFile << "Tick,Predators,Preys,Plants" << std::endl;
 }
 
 World::~World()
@@ -100,8 +93,22 @@ bool World::initSavedGeneration(std::string const& in_file_path)
 		std::cerr << "Error opening input file: " << in_file_path << std::endl;
 		return false;
 	}
+
+	std::string line;
+	std::getline(in_file, line);
+
+	try
+	{
+		generationCounter = std::stoi(line);
+	}
+	catch (...)
+	{
+		std::cerr << "Error: First line of data file is not a number (of the generation)." << std::endl;
+		return false;
+	}
+
 	bool isPreyBrain = false;
-	for (std::string line; std::getline(in_file, line);)
+	while (std::getline(in_file, line))
 	{
 		if(line == "___Prey___")
 		{
@@ -182,6 +189,7 @@ void World::killGeneration()
         }
     }
 	m_barrierPoints.clear();
+	m_pool.clear(); //TODO: check if new initialization is better
 	tickCounter = 0;
 }
 
@@ -225,7 +233,7 @@ void World::updateAgents()
                 );
             }
         }
-        // If entity has no healt
+        // If entity has no health
         if (entity->check() & 0x1)
         {
 			// Kill entity
@@ -237,8 +245,9 @@ void World::updateAgents()
         entity->perceive(generateEntityPerception(entity));
     }
 
-    populationDataFile << tickCounter << "," << predatorPopulation << ","
-        << preyPopulation << "," << plantPopulation << std::endl;
+	if (populationDataFile.is_open())
+		populationDataFile << tickCounter << "," << predatorPopulation << ","
+			<< preyPopulation << "," << plantPopulation << "\n";
 
     if (predatorPopulation == 0 || preyPopulation == 0)
         m_generationAlive = false;
@@ -326,6 +335,10 @@ void World::initializeBarriers()
 void World::startAgents()
 {
     m_stopFlag.store(0, std::memory_order_release);
+	if (generationCounter % 50 == 0)
+	{
+		createPopulationDataFile();
+	}
 	for(auto& entity : m_entities)
 	{
 		entity->spawn();
@@ -343,6 +356,7 @@ void World::stopAgents()
 		createEntitySaveFile();
 		createNeuralNetworkGraphs();
 	}
+	populationDataFile.close();
     std::cout << std::endl;
 	logFile << "[INFO] All " << m_agents.size()
 		<< " agents have been stopped for current generation." << std::endl;
@@ -419,18 +433,19 @@ void World::selectBestBrains(std::vector<NeuralNetworkPtr>& preyBrains, std::vec
 			while (predatorAmount-- > 0) predatorBrains.emplace_back(std::make_shared<NeuralNetwork>());
 			return;
 		}
+		logFile << "[INFO] Reviving best from " << m_deadEntities.size() << " dead entities." << std::endl;
 		// Every top brain produces two offsprings in next generation
 		EntityPtr deadEntity = m_deadEntities.top();
 		if (preyAmount > 0 && std::dynamic_pointer_cast<Prey>(deadEntity))
 		{
-			preyBrains.push_back(deadEntity->getBrain());
-			preyBrains.push_back(deadEntity->getBrain());
+			preyBrains.push_back(std::make_shared<NeuralNetwork>(*(deadEntity->getBrain())));
+			preyBrains.push_back(std::make_shared<NeuralNetwork>(*(deadEntity->getBrain())));
 			preyAmount-=2;
 		}
 		else if (predatorAmount > 0 && std::dynamic_pointer_cast<Predator>(deadEntity))
 		{
-			predatorBrains.push_back(deadEntity->getBrain());
-			predatorBrains.push_back(deadEntity->getBrain());
+			predatorBrains.push_back(std::make_shared<NeuralNetwork>(*(deadEntity->getBrain())));
+			predatorBrains.push_back(std::make_shared<NeuralNetwork>(*(deadEntity->getBrain())));
 			predatorAmount-=2;
 		}
 		m_deadEntities.pop();
@@ -515,7 +530,9 @@ void World::createEntitySaveFile()
     if (!out_file.is_open())
 	{
         std::cerr << "Error opening entity save file!" << std::endl;
+		return;
     }
+	out_file << std::to_string(generationCounter) << std::endl;
 	for (auto entity : m_entities)
 	{
 		out_file << entity->createSaveString();
@@ -534,10 +551,26 @@ void World::createNeuralNetworkGraphs()
 	if (!out_file.is_open())
 	{
 		std::cerr << "Error opening neural network graph export file!" << std::endl;
+		return;
 	}
 	for (auto entity : m_entities)
 	{
 		out_file << entity->documentSelf();
 	}
 	out_file.close();
+}
+
+void World::createPopulationDataFile()
+{
+	std::string timestamp = getCurrentTimestamp();
+	std::string filename = dataPath + "populationData_Gen_" + std::to_string(generationCounter)
+		+ "_" + timestamp + ".csv";
+	populationDataFile.open(filename);
+
+	if (!populationDataFile.is_open())
+	{
+        std::cerr << "Error opening population data file!" << std::endl;
+		return;
+    }
+	populationDataFile << "Tick,Predators,Preys,Plants" << std::endl;
 }

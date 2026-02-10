@@ -58,6 +58,11 @@ int main(int argc, char* argv[])
 			preydator_config_assign_map.at(key)(value);
 		}
 	}
+	if (config.init_hidden_layers < 1)
+	{
+		std::cerr << "Error: There has to be at least one initial hidden layer!" << std::endl;
+		return -1;
+	}
 
     World* world = World::GetInstance();
 	if(in_file_path.empty())

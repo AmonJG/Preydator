@@ -38,6 +38,13 @@ void ThreadPool::wait()
 	m_wait_cv.wait(lk, [&] { return m_active_jobs == 0 && m_jobs.empty(); });
 }
 
+void ThreadPool::clear()
+{
+    std::lock_guard<std::mutex> lk(m_mtx);
+    std::queue<std::function<void()>> empty;
+    std::swap(m_jobs, empty);
+}
+
 void ThreadPool::workerLoop()
 {
 	while (true)

@@ -101,6 +101,11 @@ NeuralNetworkPtr Entity::getBrain() const
     return m_brain;
 }
 
+Point Entity::getPreviousLocation() const
+{
+    return m_previous_location;
+}
+
 Point Entity::getLocation() const
 {
     return m_location;
@@ -114,4 +119,15 @@ Point Entity::getLocationRequest() const
 void Entity::allowLocationUpdate()
 {
     m_allow_location_update = true;
+}
+
+int Entity::calculateMovementBasedHealthReduction()
+{
+	if (m_lifetime <= 1) return config.entity_standard_health_loss_per_tick;
+	int std_loss = config.entity_standard_health_loss_per_tick;
+	int health_reduction = gaussianNoise(std_loss, std_loss / 3);
+	health_reduction = std::clamp(health_reduction, 0, std_loss * 2);
+	health_reduction += getEucldeanDistance(
+		m_location.x, m_location.y, m_previous_location.x, m_previous_location.y);
+	return health_reduction;
 }
