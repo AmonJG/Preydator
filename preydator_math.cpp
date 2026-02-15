@@ -34,6 +34,12 @@ double gaussianNoise(double mean, double stddev)
     return dist(rd);
 }
 
+// Rectified Linear Unit (ReLU) activation function
+double ReLU(double x)
+{
+    return std::max(0.0, x);
+}
+
 // Generates a vector of [ammount] unique ints between 0 and [limit - 1]
 std::vector<int> generateUniqueRandInts(int ammount, int limit)
 {

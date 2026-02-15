@@ -335,7 +335,7 @@ void World::initializeBarriers()
 void World::startAgents()
 {
     m_stopFlag.store(0, std::memory_order_release);
-	if (generationCounter % 50 == 0)
+	if (generationCounter % 100 == 0)
 	{
 		createPopulationDataFile();
 	}
@@ -351,7 +351,7 @@ void World::startAgents()
 void World::stopAgents()
 {
     m_stopFlag.store(-1, std::memory_order_release);
-	if (generationCounter % 50 == 0)
+	if (generationCounter % 100 == 0)
 	{
 		createEntitySaveFile();
 		createNeuralNetworkGraphs();
@@ -427,26 +427,38 @@ void World::selectBestBrains(std::vector<NeuralNetworkPtr>& preyBrains, std::vec
 	{
 		if (m_deadEntities.empty())
 		{
-			logFile << "[INFO] Execution initialized without old entities." << std::endl;
+			logFile << "[INFO] No dead entities to select brains from." << std::endl;
 			logFile << "[INFO] Generating random neural networks..." << std::endl;
 			while (preyAmount-- > 0) preyBrains.emplace_back(std::make_shared<NeuralNetwork>());
 			while (predatorAmount-- > 0) predatorBrains.emplace_back(std::make_shared<NeuralNetwork>());
 			return;
 		}
-		logFile << "[INFO] Reviving best from " << m_deadEntities.size() << " dead entities." << std::endl;
-		// Every top brain produces two offsprings in next generation
+		// Top brain for next generation
 		EntityPtr deadEntity = m_deadEntities.top();
-		if (preyAmount > 0 && std::dynamic_pointer_cast<Prey>(deadEntity))
+		int offsping_amount = generateRandomInt(1, 3);
+
+		// No offspring with 5% chance and insert random brain instead
+		if (trueWithProb(0.05))
 		{
-			preyBrains.push_back(std::make_shared<NeuralNetwork>(*(deadEntity->getBrain())));
-			preyBrains.push_back(std::make_shared<NeuralNetwork>(*(deadEntity->getBrain())));
-			preyAmount-=2;
+			std::dynamic_pointer_cast<Prey>(deadEntity)
+			? preyBrains.emplace_back(std::make_shared<NeuralNetwork>())
+			: predatorBrains.emplace_back(std::make_shared<NeuralNetwork>());
+		}
+		else if (preyAmount > 0 && std::dynamic_pointer_cast<Prey>(deadEntity))
+		{
+			while (offsping_amount-- > 0)
+			{
+				preyBrains.push_back(std::make_shared<NeuralNetwork>(*(deadEntity->getBrain())));
+				preyAmount--;
+			}
 		}
 		else if (predatorAmount > 0 && std::dynamic_pointer_cast<Predator>(deadEntity))
 		{
-			predatorBrains.push_back(std::make_shared<NeuralNetwork>(*(deadEntity->getBrain())));
-			predatorBrains.push_back(std::make_shared<NeuralNetwork>(*(deadEntity->getBrain())));
-			predatorAmount-=2;
+			while (offsping_amount-- > 0)
+			{
+				predatorBrains.push_back(std::make_shared<NeuralNetwork>(*(deadEntity->getBrain())));
+				predatorAmount--;
+			}
 		}
 		m_deadEntities.pop();
 	}

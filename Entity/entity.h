@@ -45,6 +45,7 @@ protected:
 
     int m_id;
 	NeuralNetworkPtr m_brain;
+	InputLayerValues m_perception;
     Point m_previous_location;
     Point m_location;
 	Point m_location_request;

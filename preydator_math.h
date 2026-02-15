@@ -9,6 +9,7 @@ int outputValueToStepSize(double neural_network_output_value);
 double StepDistanceToInputValue(int total_step_distance);
 int getEucldeanDistance(int x, int y, int prev_x, int prev_y);
 double gaussianNoise(double mean, double stddev);
+double ReLU(double x);
 std::vector<int> generateUniqueRandInts(int ammount, int limit);
 int generateRandomInt(int min, int max);
 double generateRandomDouble(double min, double max);

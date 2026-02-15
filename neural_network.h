@@ -136,6 +136,7 @@ using Synapse = std::shared_ptr<Edge>;
 
 struct Node {
     int id;
+    double bias;
     double value;
 	std::vector<Synapse> incoming_edges;
 };
@@ -168,6 +169,7 @@ private:
 	void createInputAndOutputLayer();
 	void setInputLayer(InputLayerValues input_layer_values);
 	void calculateNeuronValue(Neuron neuron);
+	void calculateOutputNeuronValue(Neuron neuron);
 	//Neuron getRandInputLayerNeuron();
 	Neuron getRandHiddenLayerNeuron(size_t hiddenLayerIndex);
 	Neuron getRandNeuronFromFollowingLayers(size_t startLayerIndex);

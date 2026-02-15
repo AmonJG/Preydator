@@ -11,6 +11,7 @@ void Prey::spawn()
 
 void Prey::action()
 {
+	m_desired_movement = m_brain->decideMovement(m_perception, {m_previous_location, m_location, m_health});
 	m_health -= calculateMovementBasedHealthReduction();
 	if(m_health <= 0) m_signal |= 0x1;
 	// Only if move is allowed (because it got updated by world in the
@@ -23,6 +24,10 @@ void Prey::action()
 		m_location.x = m_location_request.x;
 		m_location.y = m_location_request.y;
 	}
+	else // Lose health for invalid move
+	{
+		m_health -= config.entity_standard_health_loss_per_tick * 5;
+	}
 	// New desired movement is already known at this point and is checked
 	// for validity in the beginning of the new tick cycle.
 	m_location_request.x = m_location.x + m_desired_movement.x;
@@ -33,7 +38,7 @@ void Prey::action()
 
 void Prey::perceive(InputLayerValues perception)
 {
-	m_desired_movement = m_brain->decideMovement(perception, {m_previous_location, m_location, m_health});
+	m_perception = perception;
 }
 
 DrawInfo Prey::getDrawInfo() const

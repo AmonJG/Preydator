@@ -18,6 +18,7 @@ NeuralNetwork::NeuralNetwork()
 			m_neurons.push_back(neuron);
 			neuron->id = m_neuron_id_counter++;
 			neuron->value = 0;
+			neuron->bias = generateRandomDouble(-0.2, 0.2);
 			hidden_layer.neurons.push_back(neuron);
 		}
 		m_hidden_layers.push_back(hidden_layer);
@@ -33,22 +34,35 @@ NeuralNetwork::NeuralNetwork()
 NeuralNetwork::NeuralNetwork(std::ifstream& in_file)
 {
 	createInputAndOutputLayer();
+	std::vector<int> hidden_layer_sizes;
 	for (std::string line; std::getline(in_file, line);)
 	{
 		if (line.empty()) break;
 		if (line[0] == 'L')
 		{
-			int nodeAmount = std::stoi(line.substr(1));
-			Layer hidden_layer;
-			while (nodeAmount-- > 0)
+			size_t firstColon = line.find(':');
+			size_t secondColon = line.find(':', firstColon + 1);
+			if (firstColon == std::string::npos || secondColon == std::string::npos)
 			{
-				Neuron neuron = std::make_shared<Node>();
-				m_neurons.push_back(neuron);
-				neuron->id = m_neuron_id_counter++;
-				neuron->value = 0;
-				hidden_layer.neurons.push_back(neuron);
+				std::cerr << "ERROR: Missing ':' in node input line" << std::endl;
+				exit(EXIT_FAILURE);
 			}
-			m_hidden_layers.push_back(hidden_layer);
+			size_t hidden_layer_index = std::stoi(line.substr(1, firstColon - 1));
+			int neuron_id = std::stoi(line.substr(firstColon + 1, secondColon - firstColon - 1));
+			double bias = std::stod(line.substr(secondColon + 1));
+
+			while (hidden_layer_index > m_hidden_layers.size())
+			{
+				m_hidden_layers.push_back(Layer());
+			}
+
+			Neuron neuron = std::make_shared<Node>();
+			m_neurons.push_back(neuron);
+			neuron->id = neuron_id;
+			neuron->value = 0;
+			neuron->bias = bias;
+			m_neuron_id_counter++;
+			m_hidden_layers[hidden_layer_index].neurons.push_back(neuron);
 		}
 		else if (line[0] == 'E')
 		{
@@ -72,7 +86,11 @@ NeuralNetwork::NeuralNetwork(std::ifstream& in_file)
 			// TODO: check ob das wirklich so rekursiv geht
 			synapse->dst_neuron->incoming_edges.push_back(synapse);
 		}
-
+		else
+		{
+			std::cerr << "ERROR: Invalid input file format!" << std::endl;
+			exit(EXIT_FAILURE);
+		}
 	}
 }
 
@@ -96,7 +114,6 @@ NeuralNetwork::~NeuralNetwork()
 
 Point NeuralNetwork::decideMovement(InputLayerValues perception_values, EntityInputStats entity_input_stats)
 {
-	Point desired_movement;
 	InputLayerValues input_layer_values = perception_values;
 	input_layer_values.push_back({InputLayerNodeIds::NOISE, gaussianNoise(0.0, 0.02)});
 	double health_input = static_cast<double>(entity_input_stats.health) / config.entity_start_health;
@@ -119,11 +136,12 @@ Point NeuralNetwork::decideMovement(InputLayerValues perception_values, EntityIn
 
 	// Calculate output layer
 	Neuron x_out = m_output_layer[OutputLayerNodeIds::MOVE_X];
-	calculateNeuronValue(x_out);
+	calculateOutputNeuronValue(x_out);
 	Neuron y_out = m_output_layer[OutputLayerNodeIds::MOVE_Y];
-	calculateNeuronValue(y_out);
+	calculateOutputNeuronValue(y_out);
 
 	// Normalize and assign output values (range = [ -max_step_size, max_step_size ])
+	Point desired_movement;
 	desired_movement.x = outputValueToStepSize(x_out->value);
 	desired_movement.y = outputValueToStepSize(y_out->value);
 
@@ -186,9 +204,12 @@ std::string NeuralNetwork::getSaveString(std::string entity_type)
 {
 	std::stringstream saveString;
 	saveString << "___" << entity_type << "___"  << std::endl;
-	for (auto hidden_layer : m_hidden_layers)
+	for (size_t i = 0; i < m_hidden_layers.size(); i++)
 	{
-		saveString << "L" << hidden_layer.neurons.size() << std::endl;
+		for (auto neuron : m_hidden_layers[i].neurons)
+		{
+			saveString << "L" << i << ":" << neuron->id << ":" << neuron->bias << std::endl;
+		}
 	}
 	for (auto synapse : m_synapses)
 	{
@@ -208,6 +229,7 @@ void NeuralNetwork::createInputAndOutputLayer()
 		m_neurons.push_back(neuron);
 		neuron->id = m_neuron_id_counter++;
 		neuron->value = INVALID_INPUT_LAYER_VALUE;
+		neuron->bias = 0;
 		m_input_layer[input_mapping.node_id] = neuron;
 	}
 	// Create input layer perception neurons
@@ -217,6 +239,7 @@ void NeuralNetwork::createInputAndOutputLayer()
 		m_neurons.push_back(neuron);
 		neuron->id = m_neuron_id_counter++;
 		neuron->value = INVALID_INPUT_LAYER_VALUE;
+		neuron->bias = 0;
 		m_input_layer[perception_mapping.node_id] = neuron;
 	}
 
@@ -227,11 +250,13 @@ void NeuralNetwork::createInputAndOutputLayer()
 	m_neurons.push_back(neuron_x);
 	neuron_x->id = m_neuron_id_counter++;
 	neuron_x->value = INVALID_INPUT_LAYER_VALUE;
+	neuron_x->bias = 0;
 	m_output_layer[OutputLayerNodeIds::MOVE_X] = neuron_x;
 	Neuron neuron_y = std::make_shared<Node>();
 	m_neurons.push_back(neuron_y);
 	neuron_y->id = m_neuron_id_counter++;
 	neuron_y->value = INVALID_INPUT_LAYER_VALUE;
+	neuron_y->bias = 0;
 	m_output_layer[OutputLayerNodeIds::MOVE_Y] = neuron_y;
 }
 
@@ -250,11 +275,22 @@ void NeuralNetwork::setInputLayer(InputLayerValues input_layer_values)
 
 void NeuralNetwork::calculateNeuronValue(Neuron neuron)
 {
+	double sum = 0;
+    for (auto edge : neuron->incoming_edges)
+    {
+        sum += edge->weight * edge->src_neuron->value;
+    }
+    sum += neuron->bias;
+    neuron->value = ReLU(sum);
+}
+
+void NeuralNetwork::calculateOutputNeuronValue(Neuron neuron)
+{
 	neuron->value = 0;
-	for (auto edge : neuron->incoming_edges)
-	{
-		neuron->value += edge->weight * edge->src_neuron->value;
-	}
+    for (auto edge : neuron->incoming_edges)
+    {
+        neuron->value += edge->weight * edge->src_neuron->value;
+    }
 }
 /*
 Neuron NeuralNetwork::getRandInputLayerNeuron()
@@ -362,9 +398,26 @@ void NeuralNetwork::mutate()
 {
 	for (auto synapse : m_synapses)
 	{
+		// 15% chance for mutation
 		if (trueWithProb(0.15))
 		{
-			synapse->weight += generateRandomDouble(-0.1, 0.1);
+			double sigma = 0.1;
+			// 10% chance for strong mutation
+			if (trueWithProb(0.1)) sigma = 0.5;
+			synapse->weight += gaussianNoise(0, sigma);
+			synapse->weight = std::clamp(synapse->weight, -5.0, 5.0);
+		}
+	}
+	for (auto neuron : m_neurons)
+	{
+		// 15% chance for mutation
+		if (trueWithProb(0.15))
+		{
+			double sigma = 0.1;
+			// 10% chance for strong mutation
+			if (trueWithProb(0.1)) sigma = 0.5;
+			neuron->bias += gaussianNoise(0, sigma);
+			neuron->bias = std::clamp(neuron->bias, -5.0, 5.0);
 		}
 	}
 /*
