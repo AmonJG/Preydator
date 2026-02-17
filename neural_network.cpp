@@ -51,7 +51,7 @@ NeuralNetwork::NeuralNetwork(std::ifstream& in_file)
 			int neuron_id = std::stoi(line.substr(firstColon + 1, secondColon - firstColon - 1));
 			double bias = std::stod(line.substr(secondColon + 1));
 
-			while (hidden_layer_index > m_hidden_layers.size())
+			while (hidden_layer_index >= m_hidden_layers.size())
 			{
 				m_hidden_layers.push_back(Layer());
 			}

@@ -6,6 +6,7 @@
 #include <functional>
 #include <vector>
 #include <sstream>
+#include <cstdint>
 
 #define WORLD_X 1900
 #define WORLD_Y 1000
