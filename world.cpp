@@ -6,6 +6,7 @@
 #include "preydator_math.h"
 #include "world.h"
 #include <condition_variable>
+#include <algorithm>
 #include <mutex>
 #include <thread>
 #include <iostream>
@@ -16,6 +17,9 @@
 static EntityPtr occupiedSpace[WORLD_X][WORLD_Y] = {nullptr};
 static unsigned int tickCounter = 0;
 static unsigned int generationCounter = 0;
+static unsigned int peakPlantPopulation = 0;
+static unsigned int peakPreyPopulation = 0;
+static unsigned int peakPredatorPopulation = 0;
 std::ofstream populationDataFile;
 std::ofstream logFile;
 std::string dataPath;
@@ -49,7 +53,14 @@ World::World()
 	}
 
 	std::string timestamp = getCurrentTimestamp();
-	dataPath = "data/exec_" + timestamp;
+	if (config.show_animation)
+	{
+		dataPath = "data/exec_animated_" + timestamp;
+	}
+	else
+	{
+		dataPath = "data/exec_" + timestamp;
+	}
 	std::filesystem::create_directory(dataPath);
 	dataPath += "/";
 
@@ -175,7 +186,7 @@ void World::killGeneration()
 			m_deadEntities.push(entity);
 		}
 	}
-	logFile << "[INFO] Killing " << m_agents.size() << " agents" << std::endl;
+	logFile << "[INFO] Killing remaining " << m_agents.size() << " agents." << std::endl;
 	stopAgents();
 	m_agents.clear();
 	m_entities.clear();
@@ -191,6 +202,9 @@ void World::killGeneration()
 	m_barrierPoints.clear();
 	m_pool.clear(); //TODO: check if new initialization is better
 	tickCounter = 0;
+	peakPlantPopulation = 0;
+	peakPreyPopulation = 0;
+	peakPredatorPopulation = 0;
 }
 
 bool World::generationAlive()
@@ -203,14 +217,15 @@ void World::updateAgents()
     std::vector<AgentPtr> agentsToTerminate;
     std::vector<EntityPtr> entitiesToStart;
 
-    int plantPopulation = 0;
-    int preyPopulation = 0;
-    int predatorPopulation = 0;
+    unsigned int plantPopulation = 0;
+    unsigned int preyPopulation = 0;
+    unsigned int predatorPopulation = 0;
 
     for (auto& agent : m_agents)
     {
         auto& entity = agent->entity;
 
+		// TODO change to altering population instead of countig it every tick
         if (std::dynamic_pointer_cast<Plant>(entity)) plantPopulation++;
         if (std::dynamic_pointer_cast<Prey>(entity)) preyPopulation++;
         if (std::dynamic_pointer_cast<Predator>(entity)) predatorPopulation++;
@@ -245,6 +260,10 @@ void World::updateAgents()
         entity->perceive(generateEntityPerception(entity));
     }
 
+	peakPlantPopulation = std::max(plantPopulation, peakPlantPopulation);
+	peakPreyPopulation = std::max(preyPopulation, peakPreyPopulation);
+	peakPredatorPopulation = std::max(predatorPopulation, peakPredatorPopulation);
+
 	if (populationDataFile.is_open())
 		populationDataFile << tickCounter << "," << predatorPopulation << ","
 			<< preyPopulation << "," << plantPopulation << "\n";
@@ -277,6 +296,21 @@ void World::updateAgents()
         m_entities.push_back(entity);
         startEntityAgent(entity);
     }
+
+	if (!m_generationAlive)
+	{
+		logFile << "[INFO] Generation ended at tick: " << tickCounter << "/"
+			<< config.max_ticks_per_generation << std::endl;
+		logFile << "[INFO] Current population: " << std::endl;
+		logFile << "       Plants:    " << plantPopulation << std::endl;
+		logFile << "       Prey:      " << preyPopulation << std::endl;
+		logFile << "       Predators: " << predatorPopulation << std::endl;
+		logFile << "[INFO] Population peaks: " << std::endl;
+		logFile << "       Plants:    " << peakPlantPopulation << std::endl;
+		logFile << "       Prey:      " << peakPreyPopulation << std::endl;
+		logFile << "       Predators: " << peakPredatorPopulation << std::endl;
+	}
+
 }
 
 void World::drawEntities()
@@ -294,7 +328,7 @@ void World::initGeneration(std::vector<NeuralNetworkPtr> const& preyBrains, std:
 {
 	std::string currentTimestamp = getCurrentTimestamp();
 	std::cout << currentTimestamp << " Generation: " << ++generationCounter << std::endl;
-	logFile << currentTimestamp << " Generation: " << generationCounter << std::endl;
+	logFile << std::endl << currentTimestamp << " Generation: " << generationCounter << std::endl;
 	m_generationAlive = true;
 
     for(unsigned int i = 0; i < config.barriers_start_amount; i++)
@@ -423,12 +457,14 @@ void World::selectBestBrains(std::vector<NeuralNetworkPtr>& preyBrains, std::vec
 {
 	int preyAmount = config.prey_start_amount;
 	int predatorAmount = config.predators_start_amount;
-	while (preyAmount || predatorAmount)
+	logFile << "[INFO] Selecting best brains from " << m_deadEntities.size() << " dead entities." << std::endl;
+	while (preyAmount > 0 || predatorAmount > 0)
 	{
 		if (m_deadEntities.empty())
 		{
-			logFile << "[INFO] No dead entities to select brains from." << std::endl;
-			logFile << "[INFO] Generating random neural networks..." << std::endl;
+			logFile << "[INFO] No dead entities left to select brains from." << std::endl;
+			logFile << "[INFO] Generating random neural networks for " << preyAmount << " preys and "
+				<< predatorAmount << " predators." << std::endl;
 			while (preyAmount-- > 0) preyBrains.emplace_back(std::make_shared<NeuralNetwork>());
 			while (predatorAmount-- > 0) predatorBrains.emplace_back(std::make_shared<NeuralNetwork>());
 			return;
@@ -446,18 +482,16 @@ void World::selectBestBrains(std::vector<NeuralNetworkPtr>& preyBrains, std::vec
 		}
 		else if (preyAmount > 0 && std::dynamic_pointer_cast<Prey>(deadEntity))
 		{
-			while (offsping_amount-- > 0)
+			while (offsping_amount-- > 0 && preyAmount-- > 0)
 			{
 				preyBrains.push_back(std::make_shared<NeuralNetwork>(*(deadEntity->getBrain())));
-				preyAmount--;
 			}
 		}
 		else if (predatorAmount > 0 && std::dynamic_pointer_cast<Predator>(deadEntity))
 		{
-			while (offsping_amount-- > 0)
+			while (offsping_amount-- > 0 && predatorAmount-- > 0)
 			{
 				predatorBrains.push_back(std::make_shared<NeuralNetwork>(*(deadEntity->getBrain())));
-				predatorAmount--;
 			}
 		}
 		m_deadEntities.pop();
