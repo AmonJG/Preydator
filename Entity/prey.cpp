@@ -59,7 +59,7 @@ bool Prey::attack(EntityPtr entity)
 	if (plant && !(plant->check() & 0x1))
 	{
 		plant->sendSignal(1);
-		m_health += 200;
+		m_health += 400;
 		m_reproduction += 2000;
 		return true;
 	}
