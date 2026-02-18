@@ -23,6 +23,7 @@ static unsigned int peakPredatorPopulation = 0;
 std::ofstream populationDataFile;
 std::ofstream logFile;
 std::string dataPath;
+std::string populationDataPath;
 
 static bool parseError(std::string reason)
 {
@@ -63,6 +64,9 @@ World::World()
 	}
 	std::filesystem::create_directory(dataPath);
 	dataPath += "/";
+	populationDataPath = dataPath + "population_data";
+	std::filesystem::create_directory(populationDataPath);
+	populationDataPath += "/";
 
 	std::string filename = dataPath + "preydator_" + timestamp + ".log";
 	logFile.open(filename);
@@ -369,10 +373,7 @@ void World::initializeBarriers()
 void World::startAgents()
 {
     m_stopFlag.store(0, std::memory_order_release);
-	if (generationCounter % 100 == 0)
-	{
-		createPopulationDataFile();
-	}
+	createPopulationDataFile();
 	for(auto& entity : m_entities)
 	{
 		entity->spawn();
@@ -385,7 +386,7 @@ void World::startAgents()
 void World::stopAgents()
 {
     m_stopFlag.store(-1, std::memory_order_release);
-	if (generationCounter % 100 == 0)
+	if (generationCounter % 100 == 0 || tickCounter >= 1000)
 	{
 		createEntitySaveFile();
 		createNeuralNetworkGraphs();
@@ -609,7 +610,7 @@ void World::createNeuralNetworkGraphs()
 void World::createPopulationDataFile()
 {
 	std::string timestamp = getCurrentTimestamp();
-	std::string filename = dataPath + "populationData_Gen_" + std::to_string(generationCounter)
+	std::string filename = populationDataPath + "populationData_Gen_" + std::to_string(generationCounter)
 		+ "_" + timestamp + ".csv";
 	populationDataFile.open(filename);
 
