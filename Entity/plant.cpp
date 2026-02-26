@@ -13,7 +13,7 @@ void Plant::spawn()
 
 void Plant::action()
 {
-	if(std::rand() % 50 == 0) m_health -= 100;
+	if(std::rand() % 50 == 0) m_health -= 400;
 	if(m_health <= 0) m_signal |= 0x1;
     if(std::rand() % 50 == 0) m_reproduction += 400;
 	m_lifetime++;
@@ -28,14 +28,14 @@ DrawInfo Plant::getDrawInfo() const
     return plantDrawInfo;
 }
 
-double Plant::getPerceptionValue(EntityPtr entity) const
+double Plant::getPerceptionValue(Entity& entity) const
 {
-	return std::dynamic_pointer_cast<Prey>(entity) ?
+	return dynamic_cast<Prey*>(&entity) ?
 		PLANT_SEEN_BY_PREY_INPUT_LAYER_VALUE :
 		PLANT_SEEN_BY_PREDATOR_INPUT_LAYER_VALUE;
 }
 
-bool Plant::attack(EntityPtr entity)
+bool Plant::attack(Entity& entity)
 {
     return false;
 }
@@ -43,7 +43,7 @@ bool Plant::attack(EntityPtr entity)
 EntityPtr Plant::giveBirth(Point birthLocation)
 {
 	m_reproduction = 0;
-	return std::make_shared<Plant>(birthLocation);
+	return std::make_unique<Plant>(birthLocation);
 }
 
 std::string Plant::documentSelf()

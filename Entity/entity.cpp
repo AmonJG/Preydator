@@ -20,7 +20,7 @@ Entity::Entity()
 }
 
 Entity::Entity(NeuralNetworkPtr brain)
-	: m_brain(brain)
+	: m_brain(std::move(brain))
 {
     m_id = newId();
 	m_allow_location_update = true;
@@ -47,7 +47,7 @@ Entity::Entity(Point location)
 }
 
 Entity::Entity(NeuralNetworkPtr brain, Point location)
-	: m_brain(brain)
+	: m_brain(std::move(brain))
 {
     m_id = newId();
 	m_allow_location_update = true;
@@ -96,9 +96,9 @@ int Entity::getLifetime() const
     return m_lifetime;
 }
 
-NeuralNetworkPtr Entity::getBrain() const
+NeuralNetwork& Entity::getBrain()
 {
-    return m_brain;
+    return *m_brain;
 }
 
 Point Entity::getPreviousLocation() const
@@ -127,7 +127,8 @@ int Entity::calculateMovementBasedHealthReduction()
 	int std_loss = config.entity_standard_health_loss_per_tick;
 	int health_reduction = gaussianNoise(std_loss, std_loss / 3);
 	health_reduction = std::clamp(health_reduction, 0, std_loss * 2);
-	health_reduction += getEucldeanDistance(
+	int distance = getEucldeanDistance(
 		m_location.x, m_location.y, m_previous_location.x, m_previous_location.y);
+	health_reduction += distance * distance;
 	return health_reduction;
 }

@@ -26,7 +26,7 @@ void Predator::action()
 	}
 	else // Lose health for invalid move
 	{
-		m_health -= config.entity_standard_health_loss_per_tick * 5;
+		m_health -= config.entity_standard_health_loss_per_tick * 2;
 	}
 	// New desired movement is already known at this point and is checked
 	// for validity in the beginning of the new tick cycle.
@@ -46,20 +46,20 @@ DrawInfo Predator::getDrawInfo() const
     return predatorDrawInfo;
 }
 
-double Predator::getPerceptionValue(EntityPtr entity) const
+double Predator::getPerceptionValue(Entity& entity) const
 {
-	return std::dynamic_pointer_cast<Prey>(entity) ?
+	return dynamic_cast<Prey*>(&entity) ?
 	PREDATOR_SEEN_BY_PREY_INPUT_LAYER_VALUE :
 	PREDATOR_SEEN_BY_PREDATOR_INPUT_LAYER_VALUE;
 }
 
-bool Predator::attack(EntityPtr entity)
+bool Predator::attack(Entity& entity)
 {
-	std::shared_ptr<Prey> prey = std::dynamic_pointer_cast<Prey>(entity);
+	Prey* prey = dynamic_cast<Prey*>(&entity);
 	if (prey && !(prey->check() & 0x1))
 	{
 		prey->sendSignal(1);
-		m_health += 400;
+		m_health += 2000;
 		m_reproduction += 2000;
 		return true;
 	}
@@ -70,7 +70,7 @@ EntityPtr Predator::giveBirth(Point birthLocation)
 {
 	m_reproduction = 0;
 	m_fitness++;
-	return std::make_shared<Predator>(std::make_shared<NeuralNetwork>(*m_brain), birthLocation);
+	return std::make_unique<Predator>(std::make_unique<NeuralNetwork>(*m_brain), birthLocation);
 }
 
 std::string Predator::documentSelf()

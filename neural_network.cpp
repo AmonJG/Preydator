@@ -95,13 +95,54 @@ NeuralNetwork::NeuralNetwork(std::ifstream& in_file)
 }
 
 NeuralNetwork::NeuralNetwork(const NeuralNetwork& other)
-    : m_input_layer(other.m_input_layer),
-      m_output_layer(other.m_output_layer),
-      m_hidden_layers(other.m_hidden_layers),
-      m_synapses(other.m_synapses),
-	  m_neurons(other.m_neurons),
-      m_neuron_id_counter(other.m_neuron_id_counter)
+	: m_neuron_id_counter(other.m_neuron_id_counter)
 {
+	// Copy neurons and save ordering
+	std::unordered_map<Neuron, Neuron> neuronMap;
+    for (const auto& neuron : other.m_neurons)
+    {
+        auto newNeuron = std::make_shared<Node>();
+		newNeuron->id = neuron->id;
+		newNeuron->bias = neuron->bias;
+		newNeuron->value = 0;
+        neuronMap[neuron] = newNeuron;
+        m_neurons.push_back(newNeuron);
+    }
+
+	// Copy input layer
+	for (auto input_mapping : input_mapping_matrix)
+	{
+		m_input_layer[input_mapping.node_id] = neuronMap.at(other.m_input_layer.at(input_mapping.node_id));
+	}
+	for (auto perception_mapping : perception_mapping_matrix)
+	{
+		m_input_layer[perception_mapping.node_id] = neuronMap.at(other.m_input_layer.at(perception_mapping.node_id));
+	}
+	// Copy hidden layers
+	for (const auto& layer : other.m_hidden_layers) {
+		Layer newLayer;
+		for (const auto& oldNeuron : layer.neurons) {
+			newLayer.neurons.push_back(neuronMap.at(oldNeuron));
+		}
+		m_hidden_layers.push_back(newLayer);
+	}
+	// Copy output layer
+	m_output_layer[OutputLayerNodeIds::MOVE_X] = neuronMap.at(other.m_output_layer.at(OutputLayerNodeIds::MOVE_X));
+	m_output_layer[OutputLayerNodeIds::MOVE_Y] = neuronMap.at(other.m_output_layer.at(OutputLayerNodeIds::MOVE_Y));
+
+	// Copy synapses
+	for (const auto& syn : other.m_synapses)
+    {
+        Neuron newSrc = neuronMap.at(syn->src_neuron);
+        Neuron newDst = neuronMap.at(syn->dst_neuron);
+        auto newSyn = std::make_shared<Edge>();
+		newSyn->weight = syn->weight;
+		newSyn->src_neuron = newSrc;
+		newSyn->dst_neuron = newDst;
+        newDst->incoming_edges.push_back(newSyn);
+        m_synapses.push_back(newSyn);
+    }
+
 	// Mutate offsping brain as often as configured
 	//std::cout << "COPY BRAIN" << std::endl;
 	for (unsigned int i = 0; i < config.offspring_mutations; i++) mutate();

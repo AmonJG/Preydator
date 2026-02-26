@@ -30,7 +30,7 @@ int getEucldeanDistance(int x, int y, int prev_x, int prev_y)
 // Gaussian noise for probabilistic events/decisions
 double gaussianNoise(double mean, double stddev)
 {
-    static std::normal_distribution<double> dist(mean, stddev);
+    std::normal_distribution<double> dist(mean, stddev);
     return dist(rd);
 }
 

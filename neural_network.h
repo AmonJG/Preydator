@@ -2,6 +2,7 @@
 #define PREYDATOR_NEURAL_NETWORK_H__
 
 #include "preydator_config.h"
+#include <vector>
 #include <memory>
 
 enum InputLayerNodeIds
@@ -27,7 +28,7 @@ struct PerceptionMapping : InputMapping {
     Point point;
 };
 
-const std::vector<PerceptionMapping> input_mapping_matrix
+const std::vector<InputMapping> input_mapping_matrix
 {
 	{InputLayerNodeIds::NOISE,       "NOISE"      },
     {InputLayerNodeIds::HEALTH,      "HEALTH"     },
@@ -184,6 +185,6 @@ private:
 	int m_neuron_id_counter = 0;
 };
 
-using NeuralNetworkPtr = std::shared_ptr<NeuralNetwork>;
+using NeuralNetworkPtr = std::unique_ptr<NeuralNetwork>;
 
 #endif /* PREYDATOR_NEURAL_NETWORK_H__ */

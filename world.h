@@ -14,15 +14,16 @@
 
 struct Agent
 {
-    EntityPtr entity;
+    Entity& entity;
+	Agent(Entity& e) : entity(e) {}
 };
 
-using AgentPtr = std::shared_ptr<Agent>;
+using AgentPtr = std::unique_ptr<Agent>;
 
 struct EntityPtrCompare
 {
     bool operator()(const EntityPtr& a, const EntityPtr& b) const
-	{
+    {
         if (a->getFitness() != b->getFitness())
             return a->getFitness() < b->getFitness();
         return a->getLifetime() < b->getLifetime();
@@ -35,7 +36,7 @@ public:
 	World(World &other) = delete;
     void operator=(World const&) = delete;
     static World* GetInstance();
-    std::vector<EntityPtr> getEntities();
+    std::vector<EntityPtr>& getEntities();
 	void initNewGeneration();
 	bool initSavedGeneration(std::string const& in_file_path);
 	void killGeneration();
@@ -48,17 +49,17 @@ protected:
     ~World();
 
 private:
-	void initGeneration(std::vector<NeuralNetworkPtr> const& preyBrains, std::vector<NeuralNetworkPtr> const& predatorBrains);
+	void initGeneration(std::vector<NeuralNetworkPtr>& preyBrains, std::vector<NeuralNetworkPtr>& predatorBrains);
 	void initializeBarriers();
     void startAgents();
     void stopAgents();
     void tick(int microseconds);
-	void startEntityAgent(EntityPtr entity);
-	bool validMove(EntityPtr entity) const;
-	void updateEntityLocation(EntityPtr entity);
+	void startEntityAgent(Entity& entity);
+	bool validMove(Entity& entity) const;
+	void updateEntityLocation(Entity& entity);
 	void selectBestBrains(std::vector<NeuralNetworkPtr>& preyBrains, std::vector<NeuralNetworkPtr>& predatorBrains);
-	Point getBirthLocation(EntityPtr parent);
-	InputLayerValues generateEntityPerception(EntityPtr entity);
+	Point getBirthLocation(Entity& parent);
+	InputLayerValues generateEntityPerception(Entity& entity);
 	void createEntitySaveFile();
 	void createNeuralNetworkGraphs();
 	void createPopulationDataFile();
@@ -70,7 +71,7 @@ private:
     std::vector<EntityPtr> m_entities;
 	std::vector<EntityPtr> m_barriers;
 	std::vector<SDL_Point> m_barrierPoints;
-	std::priority_queue<EntityPtr> m_deadEntities;
+	std::priority_queue<EntityPtr, std::vector<EntityPtr>, EntityPtrCompare> m_deadEntities;
 	bool m_generationAlive = true;
     std::condition_variable m_cv;
     std::mutex m_mtx;

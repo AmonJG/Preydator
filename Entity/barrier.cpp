@@ -46,12 +46,12 @@ DrawInfo Barrier::getDrawInfo() const
     return barrierDrawInfo;
 }
 
-double Barrier::getPerceptionValue(EntityPtr entity) const
+double Barrier::getPerceptionValue(Entity& entity) const
 {
 	return BARRIER_INPUT_LAYER_VALUE;
 }
 
-bool Barrier::attack(EntityPtr entity)
+bool Barrier::attack(Entity& entity)
 {
     return false;
 }

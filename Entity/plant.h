@@ -12,8 +12,8 @@ public:
 	void action() override;
 	void perceive(InputLayerValues perception) override;
 	DrawInfo getDrawInfo() const override;
-	double getPerceptionValue(EntityPtr entity) const override;
-	bool attack(EntityPtr entity) override;
+	double getPerceptionValue(Entity& entity) const override;
+	bool attack(Entity& entity) override;
 	EntityPtr giveBirth(Point birthLocation) override;
 	std::string documentSelf() override;
 	std::string createSaveString() override;

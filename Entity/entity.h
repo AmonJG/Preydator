@@ -29,16 +29,16 @@ public:
     int getId() const;
     int getFitness() const;
     int getLifetime() const;
-	NeuralNetworkPtr getBrain() const;
+	NeuralNetwork& getBrain();
     Point getPreviousLocation() const;
     Point getLocation() const;
     Point getLocationRequest() const;
 	void allowLocationUpdate();
 	virtual std::string documentSelf() = 0;
 	virtual std::string createSaveString() = 0;
-	virtual double getPerceptionValue(std::shared_ptr<Entity> entity) const = 0;
-	virtual bool attack(std::shared_ptr<Entity> entity) = 0;
-	virtual std::shared_ptr<Entity> giveBirth(Point birthLocation) = 0;
+	virtual double getPerceptionValue(Entity& entity) const = 0;
+	virtual bool attack(Entity& entity) = 0;
+	virtual std::unique_ptr<Entity> giveBirth(Point birthLocation) = 0;
 
 protected:
 	int calculateMovementBasedHealthReduction();
@@ -59,6 +59,6 @@ protected:
 
 };
 
-using EntityPtr = std::shared_ptr<Entity>;
+using EntityPtr = std::unique_ptr<Entity>;
 
 #endif /* PREYDATOR_ENTITY_H__ */
