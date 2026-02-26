@@ -191,9 +191,10 @@ void World::killGeneration()
 	{
 		if (!dynamic_cast<Plant*>(entity.get()))
 		{
-			m_deadEntities.push(std::move(entity));
+			m_deadEntities.push_back(std::move(entity));
 		}
 	}
+	std::sort(m_deadEntities.begin(), m_deadEntities.end(), EntityPtrCompare{});
 
 	m_agents.clear();
 	m_entities.clear();
@@ -298,7 +299,7 @@ void World::updateAgents()
 
 			if (it != m_entities.end())
 			{
-				m_deadEntities.push(std::move(*it));
+				m_deadEntities.push_back(std::move(*it));
 				m_entities.erase(it);
 			}
         }
@@ -481,20 +482,20 @@ void World::selectBestBrains(std::vector<NeuralNetworkPtr>& preyBrains, std::vec
 			logFile << "[INFO] No dead entities left to select brains from." << std::endl;
 			logFile << "[INFO] Generating random neural networks for " << preyAmount << " preys and "
 				<< predatorAmount << " predators." << std::endl;
-			while (preyAmount-- > 0) preyBrains.emplace_back(std::make_unique<NeuralNetwork>());
-			while (predatorAmount-- > 0) predatorBrains.emplace_back(std::make_unique<NeuralNetwork>());
+			while (preyAmount-- > 0) preyBrains.push_back(std::make_unique<NeuralNetwork>());
+			while (predatorAmount-- > 0) predatorBrains.push_back(std::make_unique<NeuralNetwork>());
 			return;
 		}
 		// Top brain for next generation
-		EntityPtr deadEntity = std::move(const_cast<std::unique_ptr<Entity>&>(m_deadEntities.top()));
+		EntityPtr deadEntity = std::move(m_deadEntities.back());
 		int offsping_amount = generateRandomInt(1, 3);
 
 		// No offspring with 5% chance and insert random brain instead
 		if (trueWithProb(0.05))
 		{
 			dynamic_cast<Prey*>(deadEntity.get())
-			? preyBrains.emplace_back(std::make_unique<NeuralNetwork>())
-			: predatorBrains.emplace_back(std::make_unique<NeuralNetwork>());
+			? preyBrains.push_back(std::make_unique<NeuralNetwork>())
+			: predatorBrains.push_back(std::make_unique<NeuralNetwork>());
 		}
 		else if (preyAmount > 0 && dynamic_cast<Prey*>(deadEntity.get()))
 		{
@@ -510,9 +511,9 @@ void World::selectBestBrains(std::vector<NeuralNetworkPtr>& preyBrains, std::vec
 				predatorBrains.push_back(std::make_unique<NeuralNetwork>(deadEntity->getBrain()));
 			}
 		}
-		m_deadEntities.pop();
+		m_deadEntities.pop_back();
 	}
-	while (!m_deadEntities.empty()) m_deadEntities.pop();
+	m_deadEntities.clear();
 }
 
 Point World::getBirthLocation(Entity& parent)

@@ -71,7 +71,7 @@ private:
     std::vector<EntityPtr> m_entities;
 	std::vector<EntityPtr> m_barriers;
 	std::vector<SDL_Point> m_barrierPoints;
-	std::priority_queue<EntityPtr, std::vector<EntityPtr>, EntityPtrCompare> m_deadEntities;
+	std::vector<EntityPtr> m_deadEntities;
 	bool m_generationAlive = true;
     std::condition_variable m_cv;
     std::mutex m_mtx;

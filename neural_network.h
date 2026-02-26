@@ -139,7 +139,7 @@ struct Node {
     int id;
     double bias;
     double value;
-	std::vector<Synapse> incoming_edges;
+	std::vector<std::weak_ptr<Edge>> incoming_edges;
 };
 
 struct InputNodeValue {

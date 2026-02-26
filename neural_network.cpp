@@ -99,15 +99,15 @@ NeuralNetwork::NeuralNetwork(const NeuralNetwork& other)
 {
 	// Copy neurons and save ordering
 	std::unordered_map<Neuron, Neuron> neuronMap;
-    for (const auto& neuron : other.m_neurons)
-    {
-        auto newNeuron = std::make_shared<Node>();
+	for (const auto& neuron : other.m_neurons)
+	{
+		auto newNeuron = std::make_shared<Node>();
 		newNeuron->id = neuron->id;
 		newNeuron->bias = neuron->bias;
 		newNeuron->value = 0;
-        neuronMap[neuron] = newNeuron;
-        m_neurons.push_back(newNeuron);
-    }
+		neuronMap[neuron] = newNeuron;
+		m_neurons.push_back(newNeuron);
+	}
 
 	// Copy input layer
 	for (auto input_mapping : input_mapping_matrix)
@@ -132,16 +132,16 @@ NeuralNetwork::NeuralNetwork(const NeuralNetwork& other)
 
 	// Copy synapses
 	for (const auto& syn : other.m_synapses)
-    {
-        Neuron newSrc = neuronMap.at(syn->src_neuron);
-        Neuron newDst = neuronMap.at(syn->dst_neuron);
-        auto newSyn = std::make_shared<Edge>();
+	{
+		Neuron newSrc = neuronMap.at(syn->src_neuron);
+		Neuron newDst = neuronMap.at(syn->dst_neuron);
+		auto newSyn = std::make_shared<Edge>();
 		newSyn->weight = syn->weight;
 		newSyn->src_neuron = newSrc;
 		newSyn->dst_neuron = newDst;
-        newDst->incoming_edges.push_back(newSyn);
-        m_synapses.push_back(newSyn);
-    }
+		newDst->incoming_edges.push_back(newSyn);
+		m_synapses.push_back(newSyn);
+	}
 
 	// Mutate offsping brain as often as configured
 	//std::cout << "COPY BRAIN" << std::endl;
@@ -308,7 +308,7 @@ void NeuralNetwork::setInputLayer(InputLayerValues input_layer_values)
 		if(!m_input_layer[input_node.id])
 		{
 			std::cerr << "Input layer nullptr!" << std::endl;
- 			continue;
+			continue;
 		}
 		m_input_layer[input_node.id]->value = input_node.value;
 	}
@@ -317,21 +317,28 @@ void NeuralNetwork::setInputLayer(InputLayerValues input_layer_values)
 void NeuralNetwork::calculateNeuronValue(Neuron neuron)
 {
 	double sum = 0;
-    for (auto edge : neuron->incoming_edges)
-    {
-        sum += edge->weight * edge->src_neuron->value;
-    }
-    sum += neuron->bias;
-    neuron->value = ReLU(sum);
+	for (auto& weakEdge : neuron->incoming_edges)
+	{
+		if (auto edge = weakEdge.lock())
+		{
+			sum += edge->weight * edge->src_neuron->value;
+		}
+	}
+	sum += neuron->bias;
+	neuron->value = ReLU(sum);
 }
 
 void NeuralNetwork::calculateOutputNeuronValue(Neuron neuron)
 {
 	neuron->value = 0;
-    for (auto edge : neuron->incoming_edges)
-    {
-        neuron->value += edge->weight * edge->src_neuron->value;
-    }
+	for (auto& weakEdge : neuron->incoming_edges)
+	{
+
+		if (auto edge = weakEdge.lock())
+		{
+			neuron->value += edge->weight * edge->src_neuron->value;
+		}
+	}
 }
 /*
 Neuron NeuralNetwork::getRandInputLayerNeuron()
