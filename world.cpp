@@ -391,6 +391,11 @@ void World::startAgents()
 {
     m_stopFlag.store(0, std::memory_order_release);
 	createPopulationDataFile();
+	if (generationCounter % 100 == 0)// || tickCounter >= 1000)
+	{
+		createEntitySaveFile();
+		createNeuralNetworkGraphs();
+	}
 	for(auto& entity : m_entities)
 	{
 		entity->spawn();
@@ -403,11 +408,6 @@ void World::startAgents()
 void World::stopAgents()
 {
     m_stopFlag.store(-1, std::memory_order_release);
-	if (generationCounter % 100 == 0)// || tickCounter >= 1000)
-	{
-		createEntitySaveFile();
-		createNeuralNetworkGraphs();
-	}
 	populationDataFile.close();
     std::cout << std::endl;
 	logFile << "[INFO] All " << m_agents.size()
