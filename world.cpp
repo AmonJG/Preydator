@@ -363,11 +363,11 @@ void World::initGeneration(std::vector<NeuralNetworkPtr>& preyBrains, std::vecto
     }
 	for(unsigned int i = 0; i < config.prey_start_amount; i++)
     {
-        m_entities.push_back(std::make_unique<Prey>(std::move(preyBrains[i])));
+        m_entities.push_back(std::make_unique<Prey>(std::move(preyBrains[i]), generationCounter));
     }
 	for(unsigned int i = 0; i < config.predators_start_amount; i++)
     {
-        m_entities.push_back(std::make_unique<Predator>(std::move(predatorBrains[i])));
+        m_entities.push_back(std::make_unique<Predator>(std::move(predatorBrains[i]), generationCounter));
     }
 	initializeBarriers();
     startAgents();
@@ -490,8 +490,11 @@ void World::selectBestBrains(std::vector<NeuralNetworkPtr>& preyBrains, std::vec
 		EntityPtr deadEntity = std::move(m_deadEntities.back());
 		int offsping_amount = generateRandomInt(1, 3);
 
-		// No offspring with 5% chance and insert random brain instead
-		if (trueWithProb(0.05))
+		// // No offspring with 5% chance and insert random brain instead
+
+
+		// 60% chance that entity that didnt reproduce gets replaced with random
+		if (deadEntity->getFitness() < 1 && trueWithProb(0.6))
 		{
 			dynamic_cast<Prey*>(deadEntity.get())
 			? preyBrains.push_back(std::make_unique<NeuralNetwork>())

@@ -14,9 +14,9 @@ class Entity
 {
 public:
     Entity();
-    Entity(NeuralNetworkPtr brain);
+    Entity(NeuralNetworkPtr brain, unsigned int generation);
     Entity(Point location);
-    Entity(NeuralNetworkPtr brain, Point location);
+    Entity(NeuralNetworkPtr brain, unsigned int generation, Point location);
     virtual ~Entity() = default;
 	virtual void spawn() = 0;
     void tick();
@@ -29,6 +29,7 @@ public:
     int getId() const;
     int getFitness() const;
     int getLifetime() const;
+	unsigned int getGeneration() const;
 	NeuralNetwork& getBrain();
     Point getPreviousLocation() const;
     Point getLocation() const;
@@ -43,19 +44,20 @@ public:
 protected:
 	int calculateMovementBasedHealthReduction();
 
-    int m_id;
+	int m_id;
 	NeuralNetworkPtr m_brain;
 	InputLayerValues m_perception;
-    Point m_previous_location;
-    Point m_location;
+	Point m_previous_location;
+	Point m_location;
 	Point m_location_request;
 	Point m_desired_movement;
 	bool m_allow_location_update;
-    int m_health;
+	int m_health;
 	int m_fitness;
 	int m_lifetime;
-    unsigned int m_reproduction;
-    int m_signal;
+	unsigned int m_reproduction;
+	unsigned int m_generation;
+	int m_signal;
 
 };
 

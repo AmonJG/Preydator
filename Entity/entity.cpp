@@ -19,8 +19,8 @@ Entity::Entity()
     m_signal = 0;
 }
 
-Entity::Entity(NeuralNetworkPtr brain)
-	: m_brain(std::move(brain))
+Entity::Entity(NeuralNetworkPtr brain, unsigned int generation)
+	: m_brain(std::move(brain)), m_generation(generation)
 {
     m_id = newId();
 	m_allow_location_update = true;
@@ -46,8 +46,8 @@ Entity::Entity(Point location)
 	m_location_request.y = m_location.y;
 }
 
-Entity::Entity(NeuralNetworkPtr brain, Point location)
-	: m_brain(std::move(brain))
+Entity::Entity(NeuralNetworkPtr brain, unsigned int generation, Point location)
+	: m_brain(std::move(brain)), m_generation(generation)
 {
     m_id = newId();
 	m_allow_location_update = true;
@@ -94,6 +94,11 @@ int Entity::getFitness() const
 int Entity::getLifetime() const
 {
     return m_lifetime;
+}
+
+unsigned int Entity::getGeneration() const
+{
+    return m_generation;
 }
 
 NeuralNetwork& Entity::getBrain()

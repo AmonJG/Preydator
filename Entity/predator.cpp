@@ -70,7 +70,7 @@ EntityPtr Predator::giveBirth(Point birthLocation)
 {
 	m_reproduction = 0;
 	m_fitness++;
-	return std::make_unique<Predator>(std::make_unique<NeuralNetwork>(*m_brain), birthLocation);
+	return std::make_unique<Predator>(std::make_unique<NeuralNetwork>(*m_brain), m_generation + 1, birthLocation);
 }
 
 std::string Predator::documentSelf()

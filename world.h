@@ -26,7 +26,7 @@ struct EntityPtrCompare
     {
         if (a->getFitness() != b->getFitness())
             return a->getFitness() < b->getFitness();
-        return a->getLifetime() < b->getLifetime();
+        return a->getGeneration() < b->getGeneration();
     }
 };
 
