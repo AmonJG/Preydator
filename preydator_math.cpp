@@ -19,14 +19,6 @@ double StepDistanceToInputValue(int total_step_distance)
 	return total_step_distance / config.max_step_size;
 }
 
-int getEucldeanDistance(int x, int y, int prev_x, int prev_y)
-{
-	return static_cast<int>(std::sqrt(
-		(x - prev_x) * (x - prev_x) +
-		(y - prev_y) * (y - prev_y)
-	));
-}
-
 // Gaussian noise for probabilistic events/decisions
 double gaussianNoise(double mean, double stddev)
 {
@@ -123,4 +115,20 @@ std::string getCurrentTimestamp()
     std::ostringstream oss;
     oss << std::put_time(localTime, "%Y-%m-%d_%H:%M:%S");
     return oss.str();
+}
+
+int mod(int a, int b) {
+    return (a % b + b) % b;
+}
+
+int wrappedDelta(int current, int previous, int worldSize)
+{
+    int delta = current - previous;
+
+    if (delta > worldSize / 2)
+        delta -= worldSize;
+    else if (delta < -worldSize / 2)
+        delta += worldSize;
+
+    return delta;
 }

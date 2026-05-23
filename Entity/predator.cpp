@@ -1,10 +1,13 @@
 #include "predator.h"
 #include "prey.h"
 
+
+#include <iostream>
+
 void Predator::spawn()
 {
-    m_location.x = std::rand() % (WORLD_X - 9);
-    m_location.y = std::rand() % (WORLD_Y - 9);
+    m_location.x = mod(std::rand(), WORLD_X);
+    m_location.y = mod(std::rand(), WORLD_Y);
 	m_location_request.x = m_location.x;
 	m_location_request.y = m_location.y;
 }
@@ -30,8 +33,8 @@ void Predator::action()
 	}
 	// New desired movement is already known at this point and is checked
 	// for validity in the beginning of the new tick cycle.
-	m_location_request.x = m_location.x + m_desired_movement.x;
-	m_location_request.y = m_location.y + m_desired_movement.y;
+	m_location_request.x = mod((m_location.x + m_desired_movement.x), WORLD_X);
+	m_location_request.y = mod((m_location.y + m_desired_movement.y), WORLD_Y);
 	m_allow_location_update = false;
 	m_lifetime++;
 }

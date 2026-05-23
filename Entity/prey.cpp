@@ -1,10 +1,9 @@
 #include "prey.h"
-#include "plant.h"
 
 void Prey::spawn()
 {
-    m_location.x = std::rand() % (WORLD_X - 9);
-    m_location.y = std::rand() % (WORLD_Y - 9);
+    m_location.x = mod(std::rand(), WORLD_X);
+    m_location.y = mod(std::rand(), WORLD_Y);
 	m_location_request.x = m_location.x;
 	m_location_request.y = m_location.y;
 }
@@ -30,10 +29,11 @@ void Prey::action()
 	}
 	// New desired movement is already known at this point and is checked
 	// for validity in the beginning of the new tick cycle.
-	m_location_request.x = m_location.x + m_desired_movement.x;
-	m_location_request.y = m_location.y + m_desired_movement.y;
+	m_location_request.x = mod((m_location.x + m_desired_movement.x), WORLD_X);
+	m_location_request.y = mod((m_location.y + m_desired_movement.y), WORLD_Y);
 	m_allow_location_update = false;
 	m_lifetime++;
+	if(std::rand() % 50 == 0) m_reproduction += 400;
 }
 
 void Prey::perceive(InputLayerValues perception)
@@ -55,14 +55,6 @@ double Prey::getPerceptionValue(Entity& entity) const
 
 bool Prey::attack(Entity& entity)
 {
-	Plant* plant = dynamic_cast<Plant*>(&entity);
-	if (plant && !(plant->check() & 0x1))
-	{
-		plant->sendSignal(1);
-		m_health += 2000;
-		m_reproduction += 2000;
-		return true;
-	}
     return false;
 }
 

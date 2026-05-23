@@ -65,7 +65,7 @@ void GraphicsHandler::drawEntity(Entity const& entity) const
     SDL_SetRenderDrawColor(m_renderer, drawInfo.color.r, drawInfo.color.g, drawInfo.color.b, drawInfo.color.a);
     for(auto point : drawInfo.points)
     {
-        SDL_RenderDrawPoint(m_renderer, location.x + point.x, location.y + point.y);
+        SDL_RenderDrawPoint(m_renderer, mod((location.x + point.x), WORLD_X), mod((location.y + point.y), WORLD_Y));
     }
 }
 

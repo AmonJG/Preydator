@@ -2,8 +2,6 @@
 #include "Entity/entity.h"
 #include "Entity/predator.h"
 #include "Entity/prey.h"
-#include "Entity/plant.h"
-#include "Entity/barrier.h"
 #include "graphics_handler.h"
 #include "world.h"
 #include <signal.h>

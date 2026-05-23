@@ -159,9 +159,17 @@ Point NeuralNetwork::decideMovement(InputLayerValues perception_values, EntityIn
 	input_layer_values.push_back({InputLayerNodeIds::NOISE, gaussianNoise(0.0, 0.02)});
 	double health_input = static_cast<double>(entity_input_stats.health) / config.entity_start_health;
 	input_layer_values.push_back({InputLayerNodeIds::HEALTH, health_input});
-	double last_step_x = StepDistanceToInputValue(entity_input_stats.location.x - entity_input_stats.previous_location.x);
+	double last_step_x = StepDistanceToInputValue(
+		wrappedDelta(
+			entity_input_stats.location.x,
+			entity_input_stats.previous_location.x,
+			WORLD_X));
 	input_layer_values.push_back({InputLayerNodeIds::LAST_STEP_X, last_step_x});
-	double last_step_y = StepDistanceToInputValue(entity_input_stats.location.y - entity_input_stats.previous_location.y);
+	double last_step_y = StepDistanceToInputValue(
+		wrappedDelta(
+			entity_input_stats.location.y,
+			entity_input_stats.previous_location.y,
+			WORLD_Y));
 	input_layer_values.push_back({InputLayerNodeIds::LAST_STEP_Y, last_step_y});
 	// Set input layer according to agents perception
 	setInputLayer(input_layer_values);
@@ -269,7 +277,7 @@ void NeuralNetwork::createInputAndOutputLayer()
 		Neuron neuron = std::make_shared<Node>();
 		m_neurons.push_back(neuron);
 		neuron->id = m_neuron_id_counter++;
-		neuron->value = INVALID_INPUT_LAYER_VALUE;
+		neuron->value = EMPTY_INPUT_LAYER_VALUE;
 		neuron->bias = 0;
 		m_input_layer[input_mapping.node_id] = neuron;
 	}
@@ -279,7 +287,7 @@ void NeuralNetwork::createInputAndOutputLayer()
 		Neuron neuron = std::make_shared<Node>();
 		m_neurons.push_back(neuron);
 		neuron->id = m_neuron_id_counter++;
-		neuron->value = INVALID_INPUT_LAYER_VALUE;
+		neuron->value = EMPTY_INPUT_LAYER_VALUE;
 		neuron->bias = 0;
 		m_input_layer[perception_mapping.node_id] = neuron;
 	}
@@ -290,13 +298,13 @@ void NeuralNetwork::createInputAndOutputLayer()
 	Neuron neuron_x = std::make_shared<Node>();
 	m_neurons.push_back(neuron_x);
 	neuron_x->id = m_neuron_id_counter++;
-	neuron_x->value = INVALID_INPUT_LAYER_VALUE;
+	neuron_x->value = EMPTY_INPUT_LAYER_VALUE;
 	neuron_x->bias = 0;
 	m_output_layer[OutputLayerNodeIds::MOVE_X] = neuron_x;
 	Neuron neuron_y = std::make_shared<Node>();
 	m_neurons.push_back(neuron_y);
 	neuron_y->id = m_neuron_id_counter++;
-	neuron_y->value = INVALID_INPUT_LAYER_VALUE;
+	neuron_y->value = EMPTY_INPUT_LAYER_VALUE;
 	neuron_y->bias = 0;
 	m_output_layer[OutputLayerNodeIds::MOVE_Y] = neuron_y;
 }

@@ -3,7 +3,6 @@
 
 #include "preydator_config.h"
 #include "Entity/entity.h"
-#include "Entity/barrier.h"
 #include "graphics_handler.h"
 #include "thread_pool.h"
 #include <condition_variable>
@@ -50,7 +49,6 @@ protected:
 
 private:
 	void initGeneration(std::vector<NeuralNetworkPtr>& preyBrains, std::vector<NeuralNetworkPtr>& predatorBrains);
-	void initializeBarriers();
     void startAgents();
     void stopAgents();
     void tick(int microseconds);
@@ -70,8 +68,6 @@ private:
     GraphicsHandler* m_graphicsHandler;
     ThreadPool m_pool;
     std::vector<EntityPtr> m_entities;
-	std::vector<EntityPtr> m_barriers;
-	std::vector<SDL_Point> m_barrierPoints;
 	std::vector<EntityPtr> m_deadEntities;
 	bool m_generationAlive = true;
     std::condition_variable m_cv;

@@ -11,15 +11,11 @@
 #define WORLD_X 1900
 #define WORLD_Y 1000
 
-#define INVALID_INPUT_LAYER_VALUE -0.3
 #define EMPTY_INPUT_LAYER_VALUE 0
-#define BARRIER_INPUT_LAYER_VALUE -0.6
-#define PLANT_SEEN_BY_PREY_INPUT_LAYER_VALUE 1
-#define PLANT_SEEN_BY_PREDATOR_INPUT_LAYER_VALUE 0.2
-#define PREY_SEEN_BY_PREY_INPUT_LAYER_VALUE 0.1
+#define PREY_SEEN_BY_PREY_INPUT_LAYER_VALUE 0.5
 #define PREY_SEEN_BY_PREDATOR_INPUT_LAYER_VALUE 1
 #define PREDATOR_SEEN_BY_PREY_INPUT_LAYER_VALUE -1
-#define PREDATOR_SEEN_BY_PREDATOR_INPUT_LAYER_VALUE -0.2
+#define PREDATOR_SEEN_BY_PREDATOR_INPUT_LAYER_VALUE -0.5
 
 struct Point
 {
@@ -44,8 +40,6 @@ struct PreydatorConfig
     unsigned int entity_start_health;
 	unsigned int entity_standard_health_loss_per_tick;
 	unsigned int entity_reproduction_goal;
-	unsigned int barriers_start_amount;
-	unsigned int plants_start_amount;
 	unsigned int prey_start_amount;
 	unsigned int predators_start_amount;
 	unsigned int tick_delay;
@@ -72,10 +66,6 @@ preydator_config_assign_map
 		{config.entity_standard_health_loss_per_tick = std::stoul(value);}},
 	{"entity_reproduction_goal", [](std::string value)
 		{config.entity_reproduction_goal = std::stoul(value);}},
-	{"barriers_start_amount", [](std::string value)
-		{config.barriers_start_amount = std::stoul(value);}},
-	{"plants_start_amount", [](std::string value)
-		{config.plants_start_amount = std::stoul(value);}},
 	{"prey_start_amount", [](std::string value)
 		{config.prey_start_amount = std::stoul(value);}},
 	{"predators_start_amount", [](std::string value)

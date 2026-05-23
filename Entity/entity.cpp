@@ -1,6 +1,7 @@
 #include "entity.h"
 #include <cstdlib>
 #include <iostream>
+#include <cmath>
 
 static int newId()
 {
@@ -40,8 +41,8 @@ Entity::Entity(Point location)
 	m_lifetime = 0;
     m_reproduction = 0;
     m_signal = 0;
-	m_location.x = location.x;
-	m_location.y = location.y;
+	m_location.x = mod(location.x, WORLD_X);
+	m_location.y = mod(location.y, WORLD_Y);
 	m_location_request.x = m_location.x;
 	m_location_request.y = m_location.y;
 }
@@ -56,8 +57,8 @@ Entity::Entity(NeuralNetworkPtr brain, unsigned int generation, Point location)
 	m_lifetime = 0;
     m_reproduction = 0;
     m_signal = 0;
-	m_location.x = location.x;
-	m_location.y = location.y;
+	m_location.x = mod(location.x, WORLD_X);
+	m_location.y = mod(location.y, WORLD_Y);
 	m_location_request.x = m_location.x;
 	m_location_request.y = m_location.y;
 }
@@ -132,8 +133,9 @@ int Entity::calculateMovementBasedHealthReduction()
 	int std_loss = config.entity_standard_health_loss_per_tick;
 	int health_reduction = gaussianNoise(std_loss, std_loss / 3);
 	health_reduction = std::clamp(health_reduction, 0, std_loss * 2);
-	int distance = getEucldeanDistance(
-		m_location.x, m_location.y, m_previous_location.x, m_previous_location.y);
-	health_reduction += distance * distance;
+	//int dx = wrappedDelta(m_location.x, m_previous_location.x, WORLD_X);
+	//int dy = wrappedDelta(m_location.y, m_previous_location.y, WORLD_Y);
+	//int distance = static_cast<int>(std::sqrt(dx * dx + dy * dy));
+	//health_reduction += distance * distance;
 	return health_reduction;
 }

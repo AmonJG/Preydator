@@ -7,7 +7,6 @@
 
 int outputValueToStepSize(double neural_network_output_value);
 double StepDistanceToInputValue(int total_step_distance);
-int getEucldeanDistance(int x, int y, int prev_x, int prev_y);
 double gaussianNoise(double mean, double stddev);
 double ReLU(double x);
 std::vector<int> generateUniqueRandInts(int ammount, int limit);
@@ -16,5 +15,7 @@ double generateRandomDouble(double min, double max);
 bool trueWithProb(double probability);
 int randWithExponentialBias(int min, int max);
 std::string getCurrentTimestamp();
+int mod(int a, int b);
+int wrappedDelta(int current, int previous, int worldSize);
 
 #endif /* PREYDATOR_MATH_H__ */

@@ -1,5 +1,4 @@
 #include "Entity/entity.h"
-#include "Entity/plant.h"
 #include "Entity/prey.h"
 #include "Entity/predator.h"
 #include "graphics_handler.h"
@@ -17,7 +16,6 @@
 static Entity* occupiedSpace[WORLD_X][WORLD_Y] = {nullptr};
 static unsigned int tickCounter = 0;
 static unsigned int generationCounter = 0;
-static unsigned int peakPlantPopulation = 0;
 static unsigned int peakPreyPopulation = 0;
 static unsigned int peakPredatorPopulation = 0;
 std::ofstream populationDataFile;
@@ -190,16 +188,12 @@ void World::killGeneration()
 
 	for (auto& entity : m_entities)
 	{
-		if (!dynamic_cast<Plant*>(entity.get()))
-		{
-			m_deadEntities.push_back(std::move(entity));
-		}
+		m_deadEntities.push_back(std::move(entity));
 	}
 	std::sort(m_deadEntities.begin(), m_deadEntities.end(), EntityPtrCompare{});
 
 	m_agents.clear();
 	m_entities.clear();
-	m_barriers.clear();
 
 	for (int i = 0; i < WORLD_X; ++i)
 	{
@@ -208,10 +202,8 @@ void World::killGeneration()
             occupiedSpace[i][j] = nullptr;
         }
     }
-	m_barrierPoints.clear();
 	m_pool.clear(); //TODO: check if new initialization is better
 	tickCounter = 0;
-	peakPlantPopulation = 0;
 	peakPreyPopulation = 0;
 	peakPredatorPopulation = 0;
 }
@@ -226,7 +218,6 @@ void World::updateAgents()
     std::vector<Agent*> agentsToTerminate;
     std::vector<Entity*> entitiesToStart;
 
-    unsigned int plantPopulation = 0;
     unsigned int preyPopulation = 0;
     unsigned int predatorPopulation = 0;
 
@@ -235,7 +226,6 @@ void World::updateAgents()
         Entity& entity = agent->entity;
 
 		// TODO change to altering population instead of countig it every tick
-        if (dynamic_cast<Plant*>(&entity)) plantPopulation++;
         if (dynamic_cast<Prey*>(&entity)) preyPopulation++;
         if (dynamic_cast<Predator*>(&entity)) predatorPopulation++;
 
@@ -269,13 +259,12 @@ void World::updateAgents()
         entity.perceive(generateEntityPerception(entity));
     }
 
-	peakPlantPopulation = std::max(plantPopulation, peakPlantPopulation);
 	peakPreyPopulation = std::max(preyPopulation, peakPreyPopulation);
 	peakPredatorPopulation = std::max(predatorPopulation, peakPredatorPopulation);
 
 	if (populationDataFile.is_open())// && !config.training_mode)
 		populationDataFile << tickCounter << "," << predatorPopulation << ","
-			<< preyPopulation << "," << plantPopulation << "\n" << std::flush;
+			<< preyPopulation << "\n" << std::flush;
 
     if (predatorPopulation == 0 || preyPopulation == 0)
         m_generationAlive = false;
@@ -291,20 +280,17 @@ void World::updateAgents()
     {
 		Entity* entity = &agent->entity;
 		freeEntityLocation(*entity);
-        if (!dynamic_cast<Plant*>(entity))
-        {
-            auto it = std::find_if(
-				m_entities.begin(),
-				m_entities.end(),
-				[entity](const std::unique_ptr<Entity>& e){ return e.get() == entity; }
-			);
+		auto it = std::find_if(
+			m_entities.begin(),
+			m_entities.end(),
+			[entity](const std::unique_ptr<Entity>& e){ return e.get() == entity; }
+		);
 
-			if (it != m_entities.end())
-			{
-				m_deadEntities.push_back(std::move(*it));
-				m_entities.erase(it);
-			}
-        }
+		if (it != m_entities.end())
+		{
+			m_deadEntities.push_back(std::move(*it));
+			m_entities.erase(it);
+		}
 		m_agents.erase(
 			std::remove_if(
 				m_agents.begin(),
@@ -334,34 +320,28 @@ void World::updateAgents()
 				predatorPopulation < config.predators_start_amount ?
 				config.predators_start_amount - predatorPopulation : 0;
 			selectBestBrains(preyNeeded, preyBrains, predatorNeeded, predatorBrains);
+			/*
 			std::cout << "Entities: " << m_entities.size() << std::endl
 				<< " preyNeeded: " << preyNeeded << std::endl
 				<< " preyBrains: " << preyBrains.size() << std::endl
 				<< " predatorNeeded: " << predatorNeeded << std::endl
 				<< " predatorBrains: " << predatorBrains.size() << std::endl;
-				
+			*/
+
 			m_entities.reserve(m_entities.size() + preyBrains.size() + predatorBrains.size());
 			for (unsigned int i = 0; i < preyBrains.size(); i++)
 			{
 				m_entities.push_back(std::make_unique<Prey>(std::move(preyBrains[i]), generationCounter));
-				std::cout << "Entity* entity = m_entities.back().get();" << std::endl;
 				Entity* entity = m_entities.back().get();
-				std::cout << "entity->spawn();" << std::endl;
 				entity->spawn();
-				std::cout << "startEntityAgent(*entity);" << std::endl;
 				startEntityAgent(*entity);
-				std::cout << "Prey Done!" << std::endl;
 			}
 			for (unsigned int i = 0; i < predatorBrains.size(); i++)
 			{
 				m_entities.push_back(std::make_unique<Predator>(std::move(predatorBrains[i]), generationCounter));
-				std::cout << "Entity* entity = m_entities.back().get();" << std::endl;
 				Entity* entity = m_entities.back().get();
-				std::cout << "entity->spawn();" << std::endl;
 				entity->spawn();
-				std::cout << "startEntityAgent(*entity);" << std::endl;
 				startEntityAgent(*entity);
-				std::cout << "Prey Done!" << std::endl;
 			}
 		}
 
@@ -377,11 +357,9 @@ void World::updateAgents()
 		logFile << "[INFO] Generation ended at tick: " << tickCounter << "/"
 			<< config.max_ticks_per_generation << std::endl;
 		logFile << "[INFO] Current population: " << std::endl;
-		logFile << "       Plants:    " << plantPopulation << std::endl;
 		logFile << "       Prey:      " << preyPopulation << std::endl;
 		logFile << "       Predators: " << predatorPopulation << std::endl;
 		logFile << "[INFO] Population peaks: " << std::endl;
-		logFile << "       Plants:    " << peakPlantPopulation << std::endl;
 		logFile << "       Prey:      " << peakPreyPopulation << std::endl;
 		logFile << "       Predators: " << peakPredatorPopulation << std::endl;
 	}
@@ -391,7 +369,6 @@ void World::updateAgents()
 void World::drawEntities()
 {
 	if (!config.show_animation) return;
-	m_graphicsHandler->drawPoints(m_barrierPoints, {128, 128, 128, 255});
     for(auto& agent : m_agents)
     {
         m_graphicsHandler->drawEntity(agent->entity);
@@ -406,14 +383,6 @@ void World::initGeneration(std::vector<NeuralNetworkPtr>& preyBrains, std::vecto
 	logFile << std::endl << currentTimestamp << " Generation: " << generationCounter << std::endl;
 	m_generationAlive = true;
 
-    for(unsigned int i = 0; i < config.barriers_start_amount; i++)
-    {
-        m_barriers.push_back(std::make_unique<Barrier>());
-    }
-	for(unsigned int i = 0; i < config.plants_start_amount; i++)
-    {
-        m_entities.push_back(std::make_unique<Plant>());
-    }
 	for(unsigned int i = 0; i < config.prey_start_amount; i++)
     {
         m_entities.push_back(std::make_unique<Prey>(std::move(preyBrains[i]), generationCounter));
@@ -422,23 +391,7 @@ void World::initGeneration(std::vector<NeuralNetworkPtr>& preyBrains, std::vecto
     {
         m_entities.push_back(std::make_unique<Predator>(std::move(predatorBrains[i]), generationCounter));
     }
-	initializeBarriers();
     startAgents();
-}
-
-void World::initializeBarriers()
-{
-	for(auto& barrier : m_barriers)
-	{
-		barrier->spawn();
-		Point location = barrier->getLocation();
-		DrawInfo drawInfo = barrier->getDrawInfo();
-		for(auto point : drawInfo.points)
-		{
-			occupiedSpace[location.x + point.x][location.y + point.y] = barrier.get();
-			m_barrierPoints.push_back({location.x + point.x, location.y + point.y});
-		}
-	}
 }
 
 void World::startAgents()
@@ -488,7 +441,7 @@ void World::startEntityAgent(Entity& entity)
     Point loc = entity.getLocation();
     for (auto point : entity.getDrawInfo().points)
     {
-        occupiedSpace[loc.x + point.x][loc.y + point.y] = &entity;
+        occupiedSpace[mod((loc.x + point.x), WORLD_X)][mod((loc.y + point.y), WORLD_Y)] = &entity;
     }
     m_agents.push_back(std::make_unique<Agent>(entity));
 }
@@ -496,10 +449,9 @@ void World::startEntityAgent(Entity& entity)
 bool World::validMove(Entity& entity) const
 {
 	Point locReq = entity.getLocationRequest();
-	if (locReq.x > WORLD_X - 9 || locReq.x < 0 || locReq.y > WORLD_Y - 9 || locReq.y < 0 ) return false;
 	for(auto point : entity.getDrawInfo().points)
 	{
-		Entity* occupyingEntity = occupiedSpace[locReq.x + point.x][locReq.y + point.y];
+		Entity* occupyingEntity = occupiedSpace[mod((locReq.x + point.x), WORLD_X)][mod((locReq.y + point.y), WORLD_Y)];
 		if(occupyingEntity && occupyingEntity != &entity)
 		{
 			return entity.attack(*occupyingEntity);
@@ -514,11 +466,11 @@ void World::updateEntityLocation(Entity& entity)
 	Point locReq = entity.getLocationRequest();
 	for(auto point : entity.getDrawInfo().points)
 	{
-		occupiedSpace[loc.x + point.x][loc.y + point.y] = nullptr;
+		occupiedSpace[mod((loc.x + point.x), WORLD_X)][mod((loc.y + point.y), WORLD_Y)] = nullptr;
 	}
 	for(auto point : entity.getDrawInfo().points)
 	{
-		occupiedSpace[locReq.x + point.x][locReq.y + point.y] = &entity;
+		occupiedSpace[mod((locReq.x + point.x), WORLD_X)][mod((locReq.y + point.y), WORLD_Y)] = &entity;
 	}
 }
 
@@ -527,7 +479,7 @@ void World::freeEntityLocation(Entity& entity)
 	Point loc = entity.getLocation();
 	for(auto point : entity.getDrawInfo().points)
 	{
-		occupiedSpace[loc.x + point.x][loc.y + point.y] = nullptr;
+		occupiedSpace[mod((loc.x + point.x), WORLD_X)][mod((loc.y + point.y), WORLD_Y)] = nullptr;
 	}
 }
 
@@ -596,27 +548,24 @@ Point World::getBirthLocation(Entity& parent)
 	for (int i = 0; i < 20; i++)
 	{
 		// Choose random location around parent
-		birthLocation.x = parentLocation.x + (std::rand() % 19) - 9;
-		birthLocation.y = parentLocation.y + (std::rand() % 19) - 9;
-		// If location is inside the world boundary
-		if (birthLocation.x <= WORLD_X - 9 && birthLocation.x >= 0 && birthLocation.y <= WORLD_Y - 9 && birthLocation.y >= 0)
+		birthLocation.x = mod(parentLocation.x + (std::rand() % 41 - 20), WORLD_X);
+		birthLocation.y = mod(parentLocation.y + (std::rand() % 41 - 20), WORLD_Y);
+
+		// Check for every Point of the hitbox
+		for(auto point : parent.getDrawInfo().points)
 		{
-			// Check for every Point of the hitbox
-			for(auto point : parent.getDrawInfo().points)
+			// If the space is already occupied
+			Entity* occupyingEntity = occupiedSpace[mod((birthLocation.x + point.x), WORLD_X)][mod((birthLocation.y + point.y), WORLD_Y)];
+			if(occupyingEntity)
 			{
-				// If the space is already occupied
-				Entity* occupyingEntity = occupiedSpace[birthLocation.x + point.x][birthLocation.y + point.y];
-				if(occupyingEntity)
-				{
-					// If so, discard this location
-					birthLocation.x = -1;
-					birthLocation.y = -1;
-					break;
-				}
+				// If so, discard this location
+				birthLocation.x = -1;
+				birthLocation.y = -1;
+				break;
 			}
-			// If location is valid (for the whole hitbox) return it
-			if (birthLocation.x >= 0 && birthLocation.y >= 0) return birthLocation;
 		}
+		// If location is valid (for the whole hitbox) return it
+		if (birthLocation.x >= 0 && birthLocation.y >= 0) return birthLocation;
 	}
 	// Return invalid location if no valid location was found
 	birthLocation.x = -1;
@@ -626,40 +575,23 @@ Point World::getBirthLocation(Entity& parent)
 
 InputLayerValues World::generateEntityPerception(Entity& entity)
 {
-	std::cout << "Test1" << std::endl;
-	if(dynamic_cast<Plant*>(&entity)) return InputLayerValues{};
 	InputLayerValues input_layer_values;
 	Point entityLocation = entity.getLocation();
-	std::cout << "Test2" << std::endl;
 	for (auto perception_mapping : perception_mapping_matrix)
 	{
 		int x = perception_mapping.point.x + entityLocation.x;
 		int y = perception_mapping.point.y + entityLocation.y;
-		if (x < WORLD_X && x >= 0 && y < WORLD_Y && y >= 0)
+		Entity* occupyingEntity = occupiedSpace[mod(x, WORLD_X)][mod(y, WORLD_Y)];
+		if(occupyingEntity)
 		{
-			std::cout << "Test3" << std::endl;
-			Entity* occupyingEntity = occupiedSpace[x][y];
-			std::cout << "Test4" << std::endl;
-			if(occupyingEntity)
-			{
-				std::cout << "Test5" << std::endl;
-				input_layer_values.push_back({perception_mapping.node_id, occupyingEntity->getPerceptionValue(entity)});
-				std::cout << "Test6" << std::endl;
-				//std::cout << input_layer_values.back().id << " " << input_layer_values.back().value << std::endl;
-			}
-			else
-			{
-				std::cout << "Test7" << std::endl;
-				input_layer_values.push_back({perception_mapping.node_id, EMPTY_INPUT_LAYER_VALUE});
-				std::cout << "Test8" << std::endl;
-			}
+			input_layer_values.push_back({perception_mapping.node_id, occupyingEntity->getPerceptionValue(entity)});
+			//std::cout << input_layer_values.back().id << " " << input_layer_values.back().value << std::endl;
 		}
 		else
 		{
-			input_layer_values.push_back({perception_mapping.node_id, INVALID_INPUT_LAYER_VALUE});
+			input_layer_values.push_back({perception_mapping.node_id, EMPTY_INPUT_LAYER_VALUE});
 		}
 	}
-	std::cout << "Test9" << std::endl;
 	return input_layer_values;
 }
 
@@ -716,5 +648,5 @@ void World::createPopulationDataFile()
         std::cerr << "Error opening population data file!" << std::endl;
 		return;
     }
-	populationDataFile << "Tick,Predators,Preys,Plants" << std::endl;
+	populationDataFile << "Tick,Predators,Preys" << std::endl;
 }
