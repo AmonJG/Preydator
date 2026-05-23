@@ -92,7 +92,8 @@ void World::initNewGeneration()
 {
 	std::vector<NeuralNetworkPtr> preyBrains;
 	std::vector<NeuralNetworkPtr> predatorBrains;
-	selectBestBrains(preyBrains, predatorBrains);
+	selectBestBrains(config.prey_start_amount, preyBrains, config.predators_start_amount, predatorBrains);
+	m_deadEntities.clear();
 	initGeneration(preyBrains, predatorBrains);
 }
 
@@ -272,9 +273,9 @@ void World::updateAgents()
 	peakPreyPopulation = std::max(preyPopulation, peakPreyPopulation);
 	peakPredatorPopulation = std::max(predatorPopulation, peakPredatorPopulation);
 
-	if (populationDataFile.is_open())
+	if (populationDataFile.is_open())// && !config.training_mode)
 		populationDataFile << tickCounter << "," << predatorPopulation << ","
-			<< preyPopulation << "," << plantPopulation << "\n";
+			<< preyPopulation << "," << plantPopulation << "\n" << std::flush;
 
     if (predatorPopulation == 0 || preyPopulation == 0)
         m_generationAlive = false;
@@ -282,13 +283,14 @@ void World::updateAgents()
 	// Execute one World tick
     tick(config.tick_delay);
 
-    if (tickCounter >= config.max_ticks_per_generation)
+    if (!config.training_mode && tickCounter >= config.max_ticks_per_generation)
         m_generationAlive = false;
 
     // Remove dead Agents
     for (Agent* agent : agentsToTerminate)
     {
 		Entity* entity = &agent->entity;
+		freeEntityLocation(*entity);
         if (!dynamic_cast<Plant*>(entity))
         {
             auto it = std::find_if(
@@ -318,6 +320,57 @@ void World::updateAgents()
     {
         startEntityAgent(*entity);
     }
+
+	if (config.training_mode)
+	{
+		if(preyPopulation < config.prey_start_amount || predatorPopulation < config.predators_start_amount)
+		{
+			std::vector<NeuralNetworkPtr> preyBrains;
+			std::vector<NeuralNetworkPtr> predatorBrains;
+			unsigned int preyNeeded =
+				preyPopulation < config.prey_start_amount ?
+				config.prey_start_amount - preyPopulation : 0;
+			unsigned int predatorNeeded =
+				predatorPopulation < config.predators_start_amount ?
+				config.predators_start_amount - predatorPopulation : 0;
+			selectBestBrains(preyNeeded, preyBrains, predatorNeeded, predatorBrains);
+			std::cout << "Entities: " << m_entities.size() << std::endl
+				<< " preyNeeded: " << preyNeeded << std::endl
+				<< " preyBrains: " << preyBrains.size() << std::endl
+				<< " predatorNeeded: " << predatorNeeded << std::endl
+				<< " predatorBrains: " << predatorBrains.size() << std::endl;
+				
+			m_entities.reserve(m_entities.size() + preyBrains.size() + predatorBrains.size());
+			for (unsigned int i = 0; i < preyBrains.size(); i++)
+			{
+				m_entities.push_back(std::make_unique<Prey>(std::move(preyBrains[i]), generationCounter));
+				std::cout << "Entity* entity = m_entities.back().get();" << std::endl;
+				Entity* entity = m_entities.back().get();
+				std::cout << "entity->spawn();" << std::endl;
+				entity->spawn();
+				std::cout << "startEntityAgent(*entity);" << std::endl;
+				startEntityAgent(*entity);
+				std::cout << "Prey Done!" << std::endl;
+			}
+			for (unsigned int i = 0; i < predatorBrains.size(); i++)
+			{
+				m_entities.push_back(std::make_unique<Predator>(std::move(predatorBrains[i]), generationCounter));
+				std::cout << "Entity* entity = m_entities.back().get();" << std::endl;
+				Entity* entity = m_entities.back().get();
+				std::cout << "entity->spawn();" << std::endl;
+				entity->spawn();
+				std::cout << "startEntityAgent(*entity);" << std::endl;
+				startEntityAgent(*entity);
+				std::cout << "Prey Done!" << std::endl;
+			}
+		}
+
+		if (tickCounter % 100000 == 0)
+		{
+			createEntitySaveFile();
+			m_deadEntities.clear();
+		}
+	}
 
 	if (!m_generationAlive)
 	{
@@ -469,11 +522,17 @@ void World::updateEntityLocation(Entity& entity)
 	}
 }
 
-
-void World::selectBestBrains(std::vector<NeuralNetworkPtr>& preyBrains, std::vector<NeuralNetworkPtr>& predatorBrains)
+void World::freeEntityLocation(Entity& entity)
 {
-	int preyAmount = config.prey_start_amount;
-	int predatorAmount = config.predators_start_amount;
+	Point loc = entity.getLocation();
+	for(auto point : entity.getDrawInfo().points)
+	{
+		occupiedSpace[loc.x + point.x][loc.y + point.y] = nullptr;
+	}
+}
+
+void World::selectBestBrains(int preyAmount, std::vector<NeuralNetworkPtr>& preyBrains, int predatorAmount, std::vector<NeuralNetworkPtr>& predatorBrains)
+{
 	logFile << "[INFO] Selecting best brains from " << m_deadEntities.size() << " dead entities." << std::endl;
 	while (preyAmount > 0 || predatorAmount > 0)
 	{
@@ -493,30 +552,40 @@ void World::selectBestBrains(std::vector<NeuralNetworkPtr>& preyBrains, std::vec
 		// // No offspring with 5% chance and insert random brain instead
 
 
-		// 60% chance that entity that didnt reproduce gets replaced with random
-		if (deadEntity->getFitness() < 1 && trueWithProb(0.6))
+		if (preyAmount > 0 && dynamic_cast<Prey*>(deadEntity.get()))
 		{
-			dynamic_cast<Prey*>(deadEntity.get())
-			? preyBrains.push_back(std::make_unique<NeuralNetwork>())
-			: predatorBrains.push_back(std::make_unique<NeuralNetwork>());
-		}
-		else if (preyAmount > 0 && dynamic_cast<Prey*>(deadEntity.get()))
-		{
-			while (offsping_amount-- > 0 && preyAmount-- > 0)
+			// 60% chance that entity that didnt reproduce gets replaced with random
+			if (deadEntity->getFitness() < 1 && trueWithProb(0.6))
 			{
-				preyBrains.push_back(std::make_unique<NeuralNetwork>(deadEntity->getBrain()));
+				preyBrains.push_back(std::make_unique<NeuralNetwork>());
+				preyAmount--;
 			}
+			else
+			{
+				while (offsping_amount-- > 0 && preyAmount-- > 0)
+				{
+					preyBrains.push_back(std::make_unique<NeuralNetwork>(deadEntity->getBrain()));
+				}
+			}	
 		}
 		else if (predatorAmount > 0 && dynamic_cast<Predator*>(deadEntity.get()))
 		{
-			while (offsping_amount-- > 0 && predatorAmount-- > 0)
+			// 60% chance that entity that didnt reproduce gets replaced with random
+			if (deadEntity->getFitness() < 1 && trueWithProb(0.6))
 			{
-				predatorBrains.push_back(std::make_unique<NeuralNetwork>(deadEntity->getBrain()));
+				predatorBrains.push_back(std::make_unique<NeuralNetwork>());
+				predatorAmount--;
+			}
+			else
+			{
+				while (offsping_amount-- > 0 && predatorAmount-- > 0)
+				{
+					predatorBrains.push_back(std::make_unique<NeuralNetwork>(deadEntity->getBrain()));
+				}
 			}
 		}
 		m_deadEntities.pop_back();
 	}
-	m_deadEntities.clear();
 }
 
 Point World::getBirthLocation(Entity& parent)
@@ -557,24 +626,32 @@ Point World::getBirthLocation(Entity& parent)
 
 InputLayerValues World::generateEntityPerception(Entity& entity)
 {
+	std::cout << "Test1" << std::endl;
 	if(dynamic_cast<Plant*>(&entity)) return InputLayerValues{};
 	InputLayerValues input_layer_values;
 	Point entityLocation = entity.getLocation();
+	std::cout << "Test2" << std::endl;
 	for (auto perception_mapping : perception_mapping_matrix)
 	{
 		int x = perception_mapping.point.x + entityLocation.x;
 		int y = perception_mapping.point.y + entityLocation.y;
 		if (x < WORLD_X && x >= 0 && y < WORLD_Y && y >= 0)
 		{
+			std::cout << "Test3" << std::endl;
 			Entity* occupyingEntity = occupiedSpace[x][y];
+			std::cout << "Test4" << std::endl;
 			if(occupyingEntity)
 			{
+				std::cout << "Test5" << std::endl;
 				input_layer_values.push_back({perception_mapping.node_id, occupyingEntity->getPerceptionValue(entity)});
+				std::cout << "Test6" << std::endl;
 				//std::cout << input_layer_values.back().id << " " << input_layer_values.back().value << std::endl;
 			}
 			else
 			{
+				std::cout << "Test7" << std::endl;
 				input_layer_values.push_back({perception_mapping.node_id, EMPTY_INPUT_LAYER_VALUE});
+				std::cout << "Test8" << std::endl;
 			}
 		}
 		else
@@ -582,6 +659,7 @@ InputLayerValues World::generateEntityPerception(Entity& entity)
 			input_layer_values.push_back({perception_mapping.node_id, INVALID_INPUT_LAYER_VALUE});
 		}
 	}
+	std::cout << "Test9" << std::endl;
 	return input_layer_values;
 }
 

@@ -57,7 +57,8 @@ private:
 	void startEntityAgent(Entity& entity);
 	bool validMove(Entity& entity) const;
 	void updateEntityLocation(Entity& entity);
-	void selectBestBrains(std::vector<NeuralNetworkPtr>& preyBrains, std::vector<NeuralNetworkPtr>& predatorBrains);
+	void freeEntityLocation(Entity& entity);
+	void selectBestBrains(int preyAmount, std::vector<NeuralNetworkPtr>& preyBrains, int predatorAmount, std::vector<NeuralNetworkPtr>& predatorBrains);
 	Point getBirthLocation(Entity& parent);
 	InputLayerValues generateEntityPerception(Entity& entity);
 	void createEntitySaveFile();

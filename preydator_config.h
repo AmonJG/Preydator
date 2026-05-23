@@ -40,6 +40,7 @@ struct DrawInfo
 struct PreydatorConfig
 {
 	bool show_animation;
+	bool training_mode;
     unsigned int entity_start_health;
 	unsigned int entity_standard_health_loss_per_tick;
 	unsigned int entity_reproduction_goal;
@@ -63,6 +64,8 @@ preydator_config_assign_map
 {
 	{"show_animation", [](std::string value)
 		{std::istringstream(value) >> std::boolalpha >> config.show_animation;}},
+	{"training_mode", [](std::string value)
+		{std::istringstream(value) >> std::boolalpha >> config.training_mode;}},
 	{"entity_start_health", [](std::string value)
 		{config.entity_start_health = std::stoul(value);}},
 	{"entity_standard_health_loss_per_tick", [](std::string value)
