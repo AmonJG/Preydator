@@ -1,13 +1,5 @@
 #include "prey.h"
 
-void Prey::spawn()
-{
-    m_location.x = mod(std::rand(), WORLD_X);
-    m_location.y = mod(std::rand(), WORLD_Y);
-	m_location_request.x = m_location.x;
-	m_location_request.y = m_location.y;
-}
-
 void Prey::action()
 {
 	m_desired_movement = m_brain->decideMovement(m_perception, {m_previous_location, m_location, m_health});

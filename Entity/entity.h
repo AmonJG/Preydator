@@ -18,7 +18,8 @@ public:
     Entity(Point location);
     Entity(NeuralNetworkPtr brain, unsigned int generation, Point location);
     virtual ~Entity() = default;
-	virtual void spawn() = 0;
+	void spawn();
+	void spawn(int x, int y);
     void tick();
     void stop();
 	virtual void action() = 0;

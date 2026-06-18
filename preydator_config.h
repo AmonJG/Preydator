@@ -45,6 +45,7 @@ struct PreydatorConfig
 	unsigned int tick_delay;
 	unsigned int max_step_size;
 	unsigned int max_ticks_per_generation;
+	unsigned int max_ticks_per_training_generation;
 	unsigned int init_hidden_layers;
 	unsigned int init_neurons_per_hidden_layer;
 	unsigned int init_mutations;
@@ -76,6 +77,8 @@ preydator_config_assign_map
 		{config.max_step_size = std::stoul(value);}},
 	{"max_ticks_per_generation", [](std::string value)
 		{config.max_ticks_per_generation = std::stoul(value);}},
+	{"max_ticks_per_training_generation", [](std::string value)
+		{config.max_ticks_per_training_generation = std::stoul(value);}},
 	{"init_hidden_layers", [](std::string value)
 		{config.init_hidden_layers = std::stoul(value);}},
 	{"init_neurons_per_hidden_layer", [](std::string value)

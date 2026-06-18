@@ -11,6 +11,18 @@
 #include <vector>
 #include <queue>
 
+
+static const std::vector<Point> ring_offsets =
+{
+    				  {-8,-15},{-3,-17},{2,-17},{ 6,-17},{11,-17},{16,-15},
+    		{-13,-11},{-8,-11},{-3,-11},{2,-11},{ 6,-11},{11,-11},{16,-11},{21,-11},
+	{-16,-5},{-13,-5},{-8,-5},                           {11,-5}, {16,-5}, {21,-5},
+	{-18, 1},{-13, 1},{-8, 1},                           {11, 1}, {16, 1}, {21, 1},
+	{-18, 7},{-13, 7},{-8, 7},                           {11, 7}, {16, 7}, {21, 7},
+	{-16,13},{-13,13},{-8,13},{-3,13}, { 2,13}, { 6,13}, {11,13}, {16,13}, {21,13},
+			 {-13,19},{-8,19},{-3,19}, { 2,19}, { 6,19}, {11,19}
+};
+
 struct Agent
 {
     Entity& entity;
@@ -41,6 +53,7 @@ public:
 	void killGeneration();
 	bool generationAlive();
     void updateAgents();
+    void updateAgentsTraining();
     void drawEntities();
 
 protected:
@@ -50,6 +63,7 @@ protected:
 private:
 	void initGeneration(std::vector<NeuralNetworkPtr>& preyBrains, std::vector<NeuralNetworkPtr>& predatorBrains);
     void startAgents();
+	void startAgentsTraining();
     void stopAgents();
     void tick(int microseconds);
 	void startEntityAgent(Entity& entity);

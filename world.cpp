@@ -307,51 +307,6 @@ void World::updateAgents()
         startEntityAgent(*entity);
     }
 
-	if (config.training_mode)
-	{
-		if(preyPopulation < config.prey_start_amount || predatorPopulation < config.predators_start_amount)
-		{
-			std::vector<NeuralNetworkPtr> preyBrains;
-			std::vector<NeuralNetworkPtr> predatorBrains;
-			unsigned int preyNeeded =
-				preyPopulation < config.prey_start_amount ?
-				config.prey_start_amount - preyPopulation : 0;
-			unsigned int predatorNeeded =
-				predatorPopulation < config.predators_start_amount ?
-				config.predators_start_amount - predatorPopulation : 0;
-			selectBestBrains(preyNeeded, preyBrains, predatorNeeded, predatorBrains);
-			/*
-			std::cout << "Entities: " << m_entities.size() << std::endl
-				<< " preyNeeded: " << preyNeeded << std::endl
-				<< " preyBrains: " << preyBrains.size() << std::endl
-				<< " predatorNeeded: " << predatorNeeded << std::endl
-				<< " predatorBrains: " << predatorBrains.size() << std::endl;
-			*/
-
-			m_entities.reserve(m_entities.size() + preyBrains.size() + predatorBrains.size());
-			for (unsigned int i = 0; i < preyBrains.size(); i++)
-			{
-				m_entities.push_back(std::make_unique<Prey>(std::move(preyBrains[i]), generationCounter));
-				Entity* entity = m_entities.back().get();
-				entity->spawn();
-				startEntityAgent(*entity);
-			}
-			for (unsigned int i = 0; i < predatorBrains.size(); i++)
-			{
-				m_entities.push_back(std::make_unique<Predator>(std::move(predatorBrains[i]), generationCounter));
-				Entity* entity = m_entities.back().get();
-				entity->spawn();
-				startEntityAgent(*entity);
-			}
-		}
-
-		if (tickCounter % 100000 == 0)
-		{
-			createEntitySaveFile();
-			m_deadEntities.clear();
-		}
-	}
-
 	if (!m_generationAlive)
 	{
 		logFile << "[INFO] Generation ended at tick: " << tickCounter << "/"
@@ -364,6 +319,91 @@ void World::updateAgents()
 		logFile << "       Predators: " << peakPredatorPopulation << std::endl;
 	}
 
+}
+
+void World::updateAgentsTraining()
+{
+    std::vector<Agent*> agentsToTerminate;
+    std::vector<Entity*> entitiesToStart;
+
+    unsigned int preyPopulation = 0;
+    unsigned int predatorPopulation = 0;
+
+    for (auto& agent : m_agents)
+    {
+        Entity& entity = agent->entity;
+
+		// TODO change to altering population instead of countig it every tick
+        if (dynamic_cast<Prey*>(&entity)) preyPopulation++;
+        if (dynamic_cast<Predator*>(&entity)) predatorPopulation++;
+
+        // If entity executes a valid move
+        if (validMove(entity))
+        {
+			// Allow location update
+            entity.allowLocationUpdate();
+            updateEntityLocation(entity);
+        }
+        // If entity can reproduce
+        if (entity.check() & 0x2)
+        {
+            Point birthLocation = getBirthLocation(entity);
+            if (birthLocation.x >= 0 && birthLocation.y >= 0)
+            {
+				EntityPtr child = entity.giveBirth(birthLocation);
+                entitiesToStart.push_back(child.get());
+				m_entities.push_back(std::move(child));
+            }
+        }
+        // If entity has no health
+        if (entity.check() & 0x1)
+        {
+			// Kill entity
+            entity.sendSignal(1);
+            agentsToTerminate.push_back(agent.get());
+            continue;
+        }
+        // Send perception data to brain (input layer of neural network)
+        entity.perceive(generateEntityPerception(entity));
+    }
+	
+    if (tickCounter > config.max_ticks_per_training_generation)
+        m_generationAlive = false;
+
+	// Execute one World tick
+    tick(config.tick_delay);
+
+    // Remove dead Agents
+    for (Agent* agent : agentsToTerminate)
+    {
+		Entity* entity = &agent->entity;
+		freeEntityLocation(*entity);
+		auto it = std::find_if(
+			m_entities.begin(),
+			m_entities.end(),
+			[entity](const std::unique_ptr<Entity>& e){ return e.get() == entity; }
+		);
+
+		if (it != m_entities.end())
+		{
+			m_deadEntities.push_back(std::move(*it));
+			m_entities.erase(it);
+		}
+		m_agents.erase(
+			std::remove_if(
+				m_agents.begin(),
+				m_agents.end(),
+				[agent](const std::unique_ptr<Agent>& a) { return a.get() == agent; }
+			),
+			m_agents.end()
+		);
+    }
+
+    // Start Newborns
+    for (Entity* entity : entitiesToStart)
+    {
+        startEntityAgent(*entity);
+	}
 }
 
 void World::drawEntities()
@@ -391,7 +431,7 @@ void World::initGeneration(std::vector<NeuralNetworkPtr>& preyBrains, std::vecto
     {
         m_entities.push_back(std::make_unique<Predator>(std::move(predatorBrains[i]), generationCounter));
     }
-    startAgents();
+    config.training_mode ? startAgentsTraining() : startAgents();
 }
 
 void World::startAgents()
@@ -410,6 +450,44 @@ void World::startAgents()
 	}
 	logFile << "[INFO] All " << m_agents.size()
 		<< " agents have been started for current generation." << std::endl;
+}
+
+void World::startAgentsTraining()
+{
+    m_stopFlag.store(0, std::memory_order_release);
+	if (generationCounter % 5000 == 0)
+	{
+		createEntitySaveFile();
+		createNeuralNetworkGraphs();
+	}
+
+	size_t entityIndex = 0;
+	for (int y = 100; y <= WORLD_Y-100 && entityIndex < m_entities.size(); y += 100)
+	{
+		for (int x = 100; x <= WORLD_X-100 && entityIndex < m_entities.size(); x += 100)
+		{
+			while(entityIndex < m_entities.size() && !dynamic_cast<Predator*>(m_entities[entityIndex].get()))
+				++entityIndex;
+			if(!m_entities[entityIndex].get()) continue;
+			m_entities[entityIndex]->spawn(x, y);
+			startEntityAgent(*m_entities[entityIndex]);
+			++entityIndex;
+		}
+	}
+	entityIndex = 0;
+	for (int y = 100; y <= WORLD_Y-100 && entityIndex < m_entities.size(); y += 100)
+	{
+		for (int x = 100; x <= WORLD_X-100 && entityIndex < m_entities.size(); x += 100)
+		{
+			while(entityIndex < m_entities.size() && !dynamic_cast<Prey*>(m_entities[entityIndex].get()))
+				++entityIndex;
+			if(!m_entities[entityIndex].get()) continue;
+			const auto& offset = ring_offsets[std::rand() % ring_offsets.size()];
+			m_entities[entityIndex]->spawn(x + offset.x, y + offset.y);
+			startEntityAgent(*m_entities[entityIndex]);
+			++entityIndex;
+		}
+	}
 }
 
 void World::stopAgents()

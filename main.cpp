@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
     {
 		while (!quit && world->generationAlive())
 		{
-			world->updateAgents();
+			config.training_mode ? world->updateAgentsTraining() : world->updateAgents();
 			world->drawEntities();
 		}
 		world->killGeneration();

@@ -63,6 +63,22 @@ Entity::Entity(NeuralNetworkPtr brain, unsigned int generation, Point location)
 	m_location_request.y = m_location.y;
 }
 
+void Entity::spawn()
+{
+    m_location.x = mod(std::rand(), WORLD_X);
+    m_location.y = mod(std::rand(), WORLD_Y);
+	m_location_request.x = m_location.x;
+	m_location_request.y = m_location.y;
+}
+
+void Entity::spawn(int x, int y)
+{
+    m_location.x = mod(x, WORLD_X);
+    m_location.y = mod(y, WORLD_Y);
+	m_location_request.x = m_location.x;
+	m_location_request.y = m_location.y;
+}
+
 void Entity::tick()
 {
     if (m_signal != 0) return;
