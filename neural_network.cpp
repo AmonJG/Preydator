@@ -333,7 +333,7 @@ void NeuralNetwork::calculateNeuronValue(Neuron neuron)
 		}
 	}
 	sum += neuron->bias;
-	neuron->value = ReLU(sum);
+	neuron->value = tanh(sum);
 }
 
 void NeuralNetwork::calculateOutputNeuronValue(Neuron neuron)

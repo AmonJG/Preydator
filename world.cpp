@@ -438,7 +438,7 @@ void World::startAgents()
 {
     m_stopFlag.store(0, std::memory_order_release);
 	createPopulationDataFile();
-	if (generationCounter % 100 == 0)// || tickCounter >= 1000)
+	//if (generationCounter % 100 == 0)// || tickCounter >= 1000)
 	{
 		createEntitySaveFile();
 		createNeuralNetworkGraphs();
