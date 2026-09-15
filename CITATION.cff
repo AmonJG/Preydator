@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Geldner"
+    given-names: "Amon"
+    orcid: "https://orcid.org/0009-0007-7720-8407"
+title: "Preydator"
+version: 1.0.0
+date-released: 2026-09-30
+url: "https://github.com"
+repository-code: "https://github.com/AmonJG/Preydator"
+license: "GPLv2.0"
+
