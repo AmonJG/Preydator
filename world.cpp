@@ -202,7 +202,7 @@ void World::killGeneration()
             occupiedSpace[i][j] = nullptr;
         }
     }
-	m_pool.clear(); //TODO: check if new initialization is better
+	m_pool.clear();
 	tickCounter = 0;
 	peakPreyPopulation = 0;
 	peakPredatorPopulation = 0;
@@ -225,7 +225,6 @@ void World::updateAgents()
     {
         Entity& entity = agent->entity;
 
-		// TODO change to altering population instead of countig it every tick
         if (dynamic_cast<Prey*>(&entity)) preyPopulation++;
         if (dynamic_cast<Predator*>(&entity)) predatorPopulation++;
 
@@ -333,7 +332,6 @@ void World::updateAgentsTraining()
     {
         Entity& entity = agent->entity;
 
-		// TODO change to altering population instead of countig it every tick
         if (dynamic_cast<Prey*>(&entity)) preyPopulation++;
         if (dynamic_cast<Predator*>(&entity)) predatorPopulation++;
 
@@ -663,7 +661,6 @@ InputLayerValues World::generateEntityPerception(Entity& entity)
 		if(occupyingEntity)
 		{
 			input_layer_values.push_back({perception_mapping.node_id, occupyingEntity->getPerceptionValue(entity)});
-			//std::cout << input_layer_values.back().id << " " << input_layer_values.back().value << std::endl;
 		}
 		else
 		{

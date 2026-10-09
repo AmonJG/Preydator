@@ -26,7 +26,6 @@ NeuralNetwork::NeuralNetwork()
 
 	// Create new fully connected brain with random weights
 	initNewBrain();
-	//std::cout << "CONSTRUCT NN ";
 	// Mutate new brain as often as configured
 	for (unsigned int i = 0; i < config.init_mutations; i++) mutate();
 }
@@ -80,10 +79,8 @@ NeuralNetwork::NeuralNetwork(std::ifstream& in_file)
 			Synapse synapse = std::make_shared<Edge>();
 			m_synapses.push_back(synapse);
 			synapse->weight = weight;
-			// Problem: setzt vorraus dass vector position == id
 			synapse->src_neuron = m_neurons[src_neuron_id];
 			synapse->dst_neuron = m_neurons[dst_neuron_id];
-			// TODO: check ob das wirklich so rekursiv geht
 			synapse->dst_neuron->incoming_edges.push_back(synapse);
 		}
 		else
@@ -144,7 +141,6 @@ NeuralNetwork::NeuralNetwork(const NeuralNetwork& other)
 	}
 
 	// Mutate offsping brain as often as configured
-	//std::cout << "COPY BRAIN" << std::endl;
 	for (unsigned int i = 0; i < config.offspring_mutations; i++) mutate();
 }
 
@@ -156,7 +152,7 @@ NeuralNetwork::~NeuralNetwork()
 Point NeuralNetwork::decideMovement(InputLayerValues perception_values, EntityInputStats entity_input_stats)
 {
 	InputLayerValues input_layer_values = perception_values;
-	input_layer_values.push_back({InputLayerNodeIds::NOISE, gaussianNoise(0.0, 0.02)});
+	input_layer_values.push_back({InputLayerNodeIds::NOISE, gaussianNoise(0.0, 0.2)});
 	double health_input = static_cast<double>(entity_input_stats.health) / config.entity_start_health;
 	input_layer_values.push_back({InputLayerNodeIds::HEALTH, health_input});
 	double last_step_x = StepDistanceToInputValue(
@@ -222,7 +218,6 @@ std::string NeuralNetwork::exportGraph(std::string entity_type)
 	}
 	exportedGraph << "\t}\n\tsubgraph {\n\t\trank=same;" << std::endl;
 	// Write output layer neurons
-	// TODO: remove hardcoded labels
 	Neuron output_neuron = m_output_layer[OutputLayerNodeIds::MOVE_X];
 	exportedGraph << "\t\t" << output_neuron->id << " [label = \"MOVE_X\"];" << std::endl;
 	output_neuron = m_output_layer[OutputLayerNodeIds::MOVE_Y];
@@ -348,13 +343,6 @@ void NeuralNetwork::calculateOutputNeuronValue(Neuron neuron)
 		}
 	}
 }
-/*
-Neuron NeuralNetwork::getRandInputLayerNeuron()
-{
-	int neuronIndex = std::rand() % perception_mapping_matrix.size();
-	return m_input_layer[perception_mapping_matrix[neuronIndex].node_id];
-}
-*/
 
 Neuron NeuralNetwork::getRandHiddenLayerNeuron(size_t hiddenLayerIndex)
 {
@@ -476,120 +464,4 @@ void NeuralNetwork::mutate()
 			neuron->bias = std::clamp(neuron->bias, -5.0, 5.0);
 		}
 	}
-/*
-
-
-PLAN:
-
-Hidden layers: 1
-Hidden neurons: 16–32
-Weight mutation per connection: 10–20% chance, small change ±0.1–0.2
-Add edge: 5–10% per genome
-Remove edge: 1–5% per genome
-Add node: 1–3% per genome
-Remove node: 0.5–2% per genome
-Skip connections: 5–10% chance
-
-
-	// 10% New Neuron with two synapses
-	if (r % 10 == 0)
-	{
-		int hiddenLayerIndex = std::rand() % m_hidden_layers.size();
-
-		Synapse in = std::make_shared<Edge>();
-		Synapse out = std::make_shared<Edge>();
-		m_synapses.push_back(in);
-		m_synapses.push_back(out);
-		in->weight = generateRandomDouble(-1, 1);
-		out->weight = generateRandomDouble(-1, 1);
-
-		Neuron neuron = std::make_shared<Node>();
-		m_neurons.push_back(neuron);
-		neuron->id = m_neuron_id_counter++;
-		neuron->value = INVALID_INPUT_LAYER_VALUE;
-		neuron->incoming_edges.push_back(in);
-		m_hidden_layers[hiddenLayerIndex].neurons.push_back(neuron);
-		in->dst_neuron = neuron;
-		out->src_neuron = neuron;
-
-		// Get random src neuron
-		if (hiddenLayerIndex == 0)
-		{
-			in->src_neuron = getRandInputLayerNeuron();
-		}
-		else
-		{
-			in->src_neuron = getRandHiddenLayerNeuron(hiddenLayerIndex - 1);
-		}
-		// Get random dst neuron
-		out->dst_neuron = getRandNeuronFromFollowingLayers(hiddenLayerIndex + 1);
-		// TODO: check ob das wirklich so rekursiv geht
-		out->dst_neuron->incoming_edges.push_back(out);
-	}
-	// 10% New Synapse
-	if (r % 10 == 1)
-	{
-		Synapse synapse = std::make_shared<Edge>();
-		m_synapses.push_back(synapse);
-		synapse->weight = generateRandomDouble(-1, 1);
-		// +1 because input layer is also possible
-		int srcLayerIndex = std::rand() % (m_hidden_layers.size() + 1);
-		// src is input layer
-		if (srcLayerIndex == 0)
-		{
-			synapse->src_neuron = getRandInputLayerNeuron();
-		}
-		else
-		{
-			synapse->src_neuron = getRandHiddenLayerNeuron(srcLayerIndex - 1);
-		}
-		synapse->dst_neuron = getRandNeuronFromFollowingLayers(srcLayerIndex);
-		// TODO: check ob das wirklich so rekursiv geht
-		synapse->dst_neuron->incoming_edges.push_back(synapse);
-	}
-	// 10% Delete Neuron
-	if (r % 10 == 2)
-	{
-		int layerIndex = std::rand() % (m_hidden_layers.size());
-		auto neurons = m_hidden_layers[layerIndex].neurons;
-		int neuronIndex = std::rand() % neurons.size();
-		Neuron neuronToDelete = neurons[neuronIndex];
-
-		for (size_t i = 0; i < m_synapses.size(); i++)
-		{
-			if (m_synapses[i]->src_neuron == neuronToDelete ||
-				m_synapses[i]->dst_neuron == neuronToDelete)
-			{
-				m_synapses.erase(m_synapses.begin() + i);
-			}
-		}
-		for (size_t i = 0; i < m_neurons.size(); i++)
-		{
-			if (m_neurons[i] == neuronToDelete)
-			{
-				m_neurons.erase(m_neurons.begin() + i);
-			}
-		}
-		neurons.erase(neurons.begin() + neuronIndex);
-	}
-	// 10% Delete Synapse
-	if (r % 10 == 3)
-	{
-		int synapseIndex = std::rand() % (m_synapses.size());
-		Synapse synapseToDelete = m_synapses[synapseIndex];
-		// The Synapse that is about to be removed points to a neuron.
-		// This neuron has a list of all incoming edges.
-		// This Synapse need to be removed from this list to be deleted.
-		auto dstNeuronIncEdges = synapseToDelete->dst_neuron->incoming_edges;
-		for (size_t i = 0; i < dstNeuronIncEdges.size(); i++)
-		{
-			if (dstNeuronIncEdges[i] == synapseToDelete)
-			{
-				dstNeuronIncEdges.erase(dstNeuronIncEdges.begin() + i);
-			}
-		}
-		m_synapses.erase(m_synapses.begin() + synapseIndex);
-	}
-*/
-	// 1%   -> in new Hidden Layer
 }

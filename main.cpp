@@ -84,12 +84,5 @@ int main(int argc, char* argv[])
 		world->initNewGeneration();
     }
 
-    // Start initial Agent Threads
-    // Main Loop
-    //   Wait for all Agents Actions
-    //   Delete and Create Agents and corresponding Threads
-    //   Log Agent Informations
-    //   Render from atomic 2D-Grid
-
     return 0;
 }

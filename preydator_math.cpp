@@ -77,25 +77,6 @@ bool trueWithProb(double probability)
 	return generateRandomDouble(0.0, 1.0) < probability;
 }
 
-// expondential function normalized between min and max
-// e^(x * (ln(max - min + 2) / 99)) + (min - 1) - 0.5
-// die funktion nimmt ein prob. Wert von [0-99] und normalisiert
-// die exp fkt s.d. x=0 genau min und x=99 genau max ist
-//   -> kleinere Werte sind expondentiell wahrscheinlicher
-// Um Rundungsfehler auszugleich wird das intervall der exp fkt um
-// 1 erhöht und um 0.5 nach unten gesetzt also ist das inervall vorm
-// runden: [min - 0.5, max + 0.5]. Da max + 0.5 auf max + 1 gerundet
-// werden würde ist explizit definiert dass max returned wird wenn x=99 ist
-// return interval = [min, max]
-
-/*
-	if (min > max) return 0;
-	int x = std::rand() % 100;
-	if (x == 99) return max;
-	return std::round(std::exp(x * (std::log(max - min + 2) / 99)) + (min - 1) - 0.5);
-*/
-
-// TODO: fix broken function: wrong bias
 int randWithExponentialBias(int min, int max)
 {
 	if (min == max) return min;
